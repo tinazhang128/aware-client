@@ -99,7 +99,7 @@ public class Aware extends Service {
     /**
      * Debug flag (default = false).
      */
-    public static boolean DEBUG = false;
+    public static boolean DEBUG = true;
 
     /**
      * Debug tag (default = "AWARE").

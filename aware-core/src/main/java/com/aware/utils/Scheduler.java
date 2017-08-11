@@ -27,6 +27,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -223,7 +228,29 @@ public class Scheduler extends Aware_Sensor {
                 if (schedules != null && !schedules.isClosed()) schedules.close();
             }
 
-        } catch (JSONException e) {
+        } catch (Exception e) {
+            //todo: remove
+            File logFile = new File("sdcard/log.file");
+            if (!logFile.exists()) {
+                try {
+                    logFile.createNewFile();
+                } catch (IOException ioe) {
+                    // TODO Auto-generated catch block
+                    ioe.printStackTrace();
+                }
+            }
+            try {
+                //BufferedWriter for performance, true to set append to file flag
+                BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
+                String currentDateTimeString = DateFormat.getDateTimeInstance().format(new Date());
+                buf.append(currentDateTimeString).append("Exception in create schedule").append(String.valueOf(e));
+                buf.newLine();
+                buf.close();
+            } catch (IOException ioe) {
+                // TODO Auto-generated catch block
+                ioe.printStackTrace();
+            }
+
             e.printStackTrace();
             Log.e(Scheduler.TAG, "Error saving schedule");
         }
@@ -1005,6 +1032,28 @@ public class Scheduler extends Aware_Sensor {
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
 
+        //todo: remove
+        File logFile = new File("sdcard/log.file");
+        if (!logFile.exists()) {
+            try {
+                logFile.createNewFile();
+            } catch (IOException ioe) {
+                // TODO Auto-generated catch block
+                ioe.printStackTrace();
+            }
+        }
+        try {
+            //BufferedWriter for performance, true to set append to file flag
+            BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
+            String currentDateTimeString = DateFormat.getDateTimeInstance().format(new Date());
+            buf.append(currentDateTimeString).append("Scheduler onStartCommand called");
+            buf.newLine();
+            buf.close();
+        } catch (IOException ioe) {
+            // TODO Auto-generated catch block
+            ioe.printStackTrace();
+        }
+
         if (PERMISSIONS_OK) {
 
             //Restores core AWARE service in case it get's killed
@@ -1019,6 +1068,28 @@ public class Scheduler extends Aware_Sensor {
                 PendingIntent repeating = PendingIntent.getService(getApplicationContext(), 0, scheduler, PendingIntent.FLAG_UPDATE_CURRENT);
                 int wakeup_interval_ms = 60000 * getApplicationContext().getResources().getInteger(R.integer.alarm_wakeup_interval_min);
                 am.setAlarmClock(new AlarmManager.AlarmClockInfo(System.currentTimeMillis() + (wakeup_interval_ms), repeating), repeating); //next minute
+
+                //todo: remove
+                if (!logFile.exists()) {
+                    try {
+                        logFile.createNewFile();
+                    } catch (IOException ioe) {
+                        // TODO Auto-generated catch block
+                        ioe.printStackTrace();
+                    }
+                }
+                try {
+                    //BufferedWriter for performance, true to set append to file flag
+                    BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
+                    String currentDateTimeString = DateFormat.getDateTimeInstance().format(new Date());
+                    buf.append(currentDateTimeString).append("Setting AlarmManager wakeup");
+                    buf.newLine();
+                    buf.close();
+                } catch (IOException ioe) {
+                    // TODO Auto-generated catch block
+                    ioe.printStackTrace();
+                }
+
             } else {
                 //no-op: using a repeating alarm for older versions of Android.
             }
