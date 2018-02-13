@@ -59,7 +59,7 @@ import java.util.UUID;
  */
 public class Aware_Client extends Aware_Activity implements SharedPreferences.OnSharedPreferenceChangeListener
 {
-    // Testing GitHub connection on aware-phone-simple branch
+    // Testing GitHub connection on aware-phone-simple branch.
     public static boolean permissions_ok;
     private static Hashtable<Integer, Boolean> listSensorType;
     private static SharedPreferences prefs;
