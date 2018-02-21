@@ -6,7 +6,8 @@ package com.aware;
  *
  * @author denzilferreira
  */
-public class Aware_Preferences {
+public class Aware_Preferences
+{
 
     /**
      * Callback ID for joining a study
@@ -218,8 +219,8 @@ public class Aware_Preferences {
      * Location geofence.  If given and location does NOT fall within, then do not
      * record location points.
      * Format: "fence1 fence2 ..." (space separated string)
-     *   Circle fence: "lat,lon,radius".  Radius in METERS.
-     *   Rectangle fence: "rect,lat1,lon1,lat2,lon2". Literal "rect", then lats/lons.
+     * Circle fence: "lat,lon,radius".  Radius in METERS.
+     * Rectangle fence: "rect,lat1,lon1,lat2,lon2". Literal "rect", then lats/lons.
      */
     public static final String LOCATION_GEOFENCE = "location_geofence";
 

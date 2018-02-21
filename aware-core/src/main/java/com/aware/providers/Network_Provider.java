@@ -28,13 +28,21 @@ import java.util.HashMap;
  *
  * @author denzil
  */
-public class Network_Provider extends ContentProvider {
+public class Network_Provider extends ContentProvider
+{
 
-    public static final int DATABASE_VERSION = 3;
+    /**
+     * TC - TEST code to bypass network address.
+     */
+    private static final boolean BYPASS_AWARE_NETWORK = true;
+
+
+    public static final int DATABASE_VERSION = 3;// TC - Magic number... Why 3?
 
     /**
      * Authority of Screen content provider
      */
+    // TC - What is this doing?
     public static String AUTHORITY = "com.aware.provider.network";
 
     // ContentProvider query paths
@@ -43,15 +51,17 @@ public class Network_Provider extends ContentProvider {
 
     /**
      * Network content representation
-     *
-     * @author denzil
      */
-    public static final class Network_Data implements BaseColumns {
-        private Network_Data() {
+    // Implements BaseColumns takes care of _ID and _COUNT columns natively
+    public static final class Network_Data implements BaseColumns
+    {
+        private Network_Data()
+        {
         }
 
         public static final Uri CONTENT_URI = Uri.parse("content://"
                 + Network_Provider.AUTHORITY + "/network");
+
         public static final String CONTENT_TYPE = "vnd.android.cursor.dir/vnd.aware.network";
         public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/vnd.aware.network";
 
@@ -67,7 +77,8 @@ public class Network_Provider extends ContentProvider {
 
     public static final String[] DATABASE_TABLES = {"network"};
     public static final String[] TABLES_FIELDS = {
-            // network
+
+            // TC - network Magic Values undefined in comments
             Network_Data._ID + " integer primary key autoincrement,"
                     + Network_Data.TIMESTAMP + " real default 0,"
                     + Network_Data.DEVICE_ID + " text default '',"
@@ -77,12 +88,15 @@ public class Network_Provider extends ContentProvider {
     };
 
     private UriMatcher sUriMatcher = null;
+
+    // TODO TC - Whats this used for? Needs commenting to help understand it's purpose.
     private HashMap<String, String> networkProjectionMap = null;
 
     private DatabaseHelper dbHelper;
     private static SQLiteDatabase database;
 
-    private void initialiseDatabase() {
+    private void initialiseDatabase()
+    {
         if (dbHelper == null)
             dbHelper = new DatabaseHelper(getContext(), DATABASE_NAME, null, DATABASE_VERSION, DATABASE_TABLES, TABLES_FIELDS);
         if (database == null)
@@ -90,10 +104,14 @@ public class Network_Provider extends ContentProvider {
     }
 
     /**
+     * checks if DB exists (initialiseDB) then locks connection (beginTrans)
+     * performs delete on table 0 <--Magic, finally closes connection
      * Delete entry from the database
+     * TODO - in the context of a write only database, this may not be of use?
      */
     @Override
-    public synchronized int delete(Uri uri, String selection, String[] selectionArgs) {
+    public synchronized int delete(Uri uri, String selection, String[] selectionArgs)
+    {
 
         initialiseDatabase();
 
@@ -101,10 +119,10 @@ public class Network_Provider extends ContentProvider {
         database.beginTransaction();
 
         int count = 0;
-        switch (sUriMatcher.match(uri)) {
+        switch (sUriMatcher.match(uri))
+        {
             case NETWORK:
-                count = database.delete(DATABASE_TABLES[0], selection,
-                        selectionArgs);
+                count = database.delete(DATABASE_TABLES[0], selection, selectionArgs);
                 break;
             default:
                 database.endTransaction();
@@ -114,13 +132,21 @@ public class Network_Provider extends ContentProvider {
         database.setTransactionSuccessful();
         database.endTransaction();
 
+        // TC - lookup
         getContext().getContentResolver().notifyChange(uri, null);
         return count;
     }
 
+    /**
+     * Returns the following hard coded Strings
+     * CONTENT_TYPE "vnd.android.cursor.dir/vnd.aware.network";
+     * CONTENT_ITEM_TYPE "vnd.android.cursor.item/vnd.aware.network";
+     */
     @Override
-    public String getType(Uri uri) {
-        switch (sUriMatcher.match(uri)) {
+    public String getType(Uri uri)
+    {
+        switch (sUriMatcher.match(uri))
+        {
             case NETWORK:
                 return Network_Data.CONTENT_TYPE;
             case NETWORK_ID:
@@ -134,53 +160,72 @@ public class Network_Provider extends ContentProvider {
      * Insert entry to the database
      */
     @Override
-    public synchronized Uri insert(Uri uri, ContentValues initialValues) {
+    public synchronized Uri insert(Uri uri, ContentValues initialValues)
+    {
 
         initialiseDatabase();
 
         ContentValues values = (initialValues != null) ? new ContentValues(initialValues) : new ContentValues();
 
+
         database.beginTransaction();
 
-        switch (sUriMatcher.match(uri)) {
+        // TODO - TC - Reroute this uri and network location to be direct to DB
+        switch (sUriMatcher.match(uri))
+        {
             case NETWORK:
                 long network_id = database.insertWithOnConflict(DATABASE_TABLES[0],
                         Network_Data.DEVICE_ID, values, SQLiteDatabase.CONFLICT_IGNORE);
+
                 database.setTransactionSuccessful();
+
                 database.endTransaction();
-                if (network_id > 0) {
+
+                if (network_id > 0)
+                {
                     Uri networkUri = ContentUris.withAppendedId(
                             Network_Data.CONTENT_URI, network_id);
+
                     getContext().getContentResolver()
                             .notifyChange(networkUri, null);
+
                     return networkUri;
                 }
                 database.endTransaction();
+
                 throw new SQLException("Failed to insert row into " + uri);
+
             default:
                 database.endTransaction();
+
                 throw new IllegalArgumentException("Unknown URI " + uri);
+
         }
     }
 
     @Override
-    public boolean onCreate() {
+    public boolean onCreate()
+    {
         AUTHORITY = getContext().getPackageName() + ".provider.network";
 
         sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
-        sUriMatcher.addURI(Network_Provider.AUTHORITY, DATABASE_TABLES[0],
-                NETWORK);
-        sUriMatcher.addURI(Network_Provider.AUTHORITY, DATABASE_TABLES[0]
-                + "/#", NETWORK_ID);
 
+        sUriMatcher.addURI(Network_Provider.AUTHORITY, DATABASE_TABLES[0], NETWORK);
+        sUriMatcher.addURI(Network_Provider.AUTHORITY, DATABASE_TABLES[0] + "/#", NETWORK_ID);
+
+        // TC - Not sure what this is doing? Mapping same names? is that necessary?
         networkProjectionMap = new HashMap<String, String>();
+
         networkProjectionMap.put(Network_Data._ID, Network_Data._ID);
-        networkProjectionMap
-                .put(Network_Data.TIMESTAMP, Network_Data.TIMESTAMP);
-        networkProjectionMap
-                .put(Network_Data.DEVICE_ID, Network_Data.DEVICE_ID);
+
+        networkProjectionMap.put(Network_Data.TIMESTAMP, Network_Data.TIMESTAMP);
+
+        networkProjectionMap.put(Network_Data.DEVICE_ID, Network_Data.DEVICE_ID);
+
         networkProjectionMap.put(Network_Data.TYPE, Network_Data.TYPE);
+
         networkProjectionMap.put(Network_Data.SUBTYPE, Network_Data.SUBTYPE);
+
         networkProjectionMap.put(Network_Data.STATE, Network_Data.STATE);
 
         return true;
@@ -188,15 +233,18 @@ public class Network_Provider extends ContentProvider {
 
     /**
      * Query entries from the database
+     * TODO - in the context of a write only database, this may not be of use?
      */
     @Override
     public Cursor query(Uri uri, String[] projection, String selection,
-                        String[] selectionArgs, String sortOrder) {
+                        String[] selectionArgs, String sortOrder)
+    {
 
         initialiseDatabase();
 
         SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
-        switch (sUriMatcher.match(uri)) {
+        switch (sUriMatcher.match(uri))
+        {
             case NETWORK:
                 qb.setTables(DATABASE_TABLES[0]);
                 qb.setProjectionMap(networkProjectionMap);
@@ -205,12 +253,15 @@ public class Network_Provider extends ContentProvider {
 
                 throw new IllegalArgumentException("Unknown URI " + uri);
         }
-        try {
+        try
+        {
             Cursor c = qb.query(database, projection, selection, selectionArgs,
                     null, null, sortOrder);
             c.setNotificationUri(getContext().getContentResolver(), uri);
             return c;
-        } catch (IllegalStateException e) {
+        }
+        catch (IllegalStateException e)
+        {
             if (Aware.DEBUG)
                 Log.e(Aware.TAG, e.getMessage());
 
@@ -220,17 +271,20 @@ public class Network_Provider extends ContentProvider {
 
     /**
      * Update application on the database
+     * TODO - in the context of a write only database, this may not be of use?
      */
     @Override
     public synchronized int update(Uri uri, ContentValues values, String selection,
-                      String[] selectionArgs) {
+                                   String[] selectionArgs)
+    {
 
         initialiseDatabase();
 
         database.beginTransaction();
 
         int count = 0;
-        switch (sUriMatcher.match(uri)) {
+        switch (sUriMatcher.match(uri))
+        {
             case NETWORK:
                 count = database.update(DATABASE_TABLES[0], values, selection,
                         selectionArgs);

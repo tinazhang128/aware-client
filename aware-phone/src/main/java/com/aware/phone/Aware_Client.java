@@ -120,6 +120,7 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
         }
         if (PERMISSIONS_OK)
         {
+            // TC - If all permissions are granted, launch Aware.
             Intent aware = new Intent(this, Aware.class);
             startService(aware);
         }
@@ -347,9 +348,13 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
             Log.d(Aware.TAG, "Requesting permissions...");
 
             Intent permissionsHandler = new Intent(this, PermissionsHandler.class);
+
             permissionsHandler.putStringArrayListExtra(PermissionsHandler.EXTRA_REQUIRED_PERMISSIONS, REQUIRED_PERMISSIONS);
+
             permissionsHandler.putExtra(PermissionsHandler.EXTRA_REDIRECT_ACTIVITY, getPackageName() + "/" + getClass().getName());
+
             permissionsHandler.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
             startActivity(permissionsHandler);
 
         } else
@@ -364,11 +369,14 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
                 PreferenceManager.setDefaultValues(getApplicationContext(), "com.aware.phone", Context.MODE_PRIVATE, R.xml.aware_preferences, false);
             }
 
-            Map<String, ?> defaults = prefs.getAll();
+            Map<String, ?> defaults = prefs.getAll();// lookup this syntax
+
             for (Map.Entry<String, ?> entry : defaults.entrySet())
             {
+
                 if (Aware.getSetting(getApplicationContext(), entry.getKey(), "com.aware.phone").length() == 0)
                 {
+
                     Aware.setSetting(getApplicationContext(), entry.getKey(), entry.getValue(), "com.aware.phone"); //default AWARE settings
                 }
             }
@@ -467,6 +475,8 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
                 );
             } else
             {
+                // This is where the system is syncing with the server.
+                // Lookup SettingsSync.execute
                 new SettingsSync().execute(
                         findPreference(Aware_Preferences.DEVICE_ID),
                         findPreference(Aware_Preferences.DEVICE_LABEL),
@@ -563,6 +573,7 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
 
             try
             {
+                // TC - Why is this pinging server?
                 new Https(SSLManager.getHTTPS(getApplicationContext(), "https://api.awareframework.com/index.php")).dataPOST("https://api.awareframework.com/index.php/awaredev/alive", device_ping, true);
             }
             catch (FileNotFoundException e)

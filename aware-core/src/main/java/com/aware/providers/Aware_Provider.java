@@ -25,7 +25,8 @@ import java.util.HashMap;
  *
  * @author df
  */
-public class Aware_Provider extends ContentProvider {
+public class Aware_Provider extends ContentProvider
+{
 
     public static final int DATABASE_VERSION = 18;
 
@@ -51,8 +52,10 @@ public class Aware_Provider extends ContentProvider {
      *
      * @author denzil
      */
-    public static final class Aware_Device implements BaseColumns {
-        private Aware_Device() {
+    public static final class Aware_Device implements BaseColumns
+    {
+        private Aware_Device()
+        {
         }
 
         public static final Uri CONTENT_URI = Uri.parse("content://" + Aware_Provider.AUTHORITY + "/aware_device");
@@ -82,8 +85,10 @@ public class Aware_Provider extends ContentProvider {
      *
      * @author denzil
      */
-    public static final class Aware_Settings implements BaseColumns {
-        private Aware_Settings() {
+    public static final class Aware_Settings implements BaseColumns
+    {
+        private Aware_Settings()
+        {
         }
 
         public static final Uri CONTENT_URI = Uri.parse("content://" + Aware_Provider.AUTHORITY + "/aware_settings");
@@ -101,8 +106,10 @@ public class Aware_Provider extends ContentProvider {
      *
      * @author denzil
      */
-    public static final class Aware_Plugins implements BaseColumns {
-        private Aware_Plugins() {
+    public static final class Aware_Plugins implements BaseColumns
+    {
+        private Aware_Plugins()
+        {
         }
 
         public static final Uri CONTENT_URI = Uri.parse("content://" + Aware_Provider.AUTHORITY + "/aware_plugins");
@@ -119,8 +126,10 @@ public class Aware_Provider extends ContentProvider {
         public static final String PLUGIN_DESCRIPTION = "plugin_description";
     }
 
-    public static final class Aware_Studies implements BaseColumns {
-        private Aware_Studies() {
+    public static final class Aware_Studies implements BaseColumns
+    {
+        private Aware_Studies()
+        {
         }
 
         public static final Uri CONTENT_URI = Uri.parse("content://" + Aware_Provider.AUTHORITY + "/aware_studies");
@@ -142,8 +151,10 @@ public class Aware_Provider extends ContentProvider {
         public static final String STUDY_COMPLIANCE = "study_compliance";
     }
 
-    public static final class Aware_Log implements BaseColumns {
-        private Aware_Log() {
+    public static final class Aware_Log implements BaseColumns
+    {
+        private Aware_Log()
+        {
         }
 
         public static final Uri CONTENT_URI = Uri.parse("content://" + Aware_Provider.AUTHORITY + "/aware_log");
@@ -225,7 +236,8 @@ public class Aware_Provider extends ContentProvider {
     private DatabaseHelper dbHelper;
     private static SQLiteDatabase database;
 
-    private void initialiseDatabase() {
+    private void initialiseDatabase()
+    {
         if (dbHelper == null)
             dbHelper = new DatabaseHelper(getContext(), DATABASE_NAME, null, DATABASE_VERSION, DATABASE_TABLES, TABLES_FIELDS);
         if (database == null)
@@ -236,7 +248,8 @@ public class Aware_Provider extends ContentProvider {
      * Delete entry from the database
      */
     @Override
-    public synchronized int delete(Uri uri, String selection, String[] selectionArgs) {
+    public synchronized int delete(Uri uri, String selection, String[] selectionArgs)
+    {
 
         initialiseDatabase();
         if (database == null) return 0;
@@ -244,7 +257,8 @@ public class Aware_Provider extends ContentProvider {
         database.beginTransaction();
 
         int count;
-        switch (sUriMatcher.match(uri)) {
+        switch (sUriMatcher.match(uri))
+        {
             case DEVICE_INFO:
                 count = database.delete(DATABASE_TABLES[0], selection, selectionArgs);
                 break;
@@ -274,8 +288,10 @@ public class Aware_Provider extends ContentProvider {
     }
 
     @Override
-    public String getType(Uri uri) {
-        switch (sUriMatcher.match(uri)) {
+    public String getType(Uri uri)
+    {
+        switch (sUriMatcher.match(uri))
+        {
             case DEVICE_INFO:
                 return Aware_Device.CONTENT_TYPE;
             case DEVICE_INFO_ID:
@@ -305,7 +321,8 @@ public class Aware_Provider extends ContentProvider {
      * Insert entry to the database
      */
     @Override
-    public synchronized Uri insert(Uri uri, ContentValues initialValues) {
+    public synchronized Uri insert(Uri uri, ContentValues initialValues)
+    {
 
         initialiseDatabase();
         if (database == null) throw new SQLException("Failed to read database: " + uri);
@@ -314,10 +331,12 @@ public class Aware_Provider extends ContentProvider {
 
         database.beginTransaction();
 
-        switch (sUriMatcher.match(uri)) {
+        switch (sUriMatcher.match(uri))
+        {
             case DEVICE_INFO:
                 long dev_id = database.insertWithOnConflict(DATABASE_TABLES[0], Aware_Device.DEVICE_ID, values, SQLiteDatabase.CONFLICT_IGNORE);
-                if (dev_id > 0) {
+                if (dev_id > 0)
+                {
                     Uri devUri = ContentUris.withAppendedId(
                             Aware_Device.CONTENT_URI, dev_id);
                     getContext().getContentResolver().notifyChange(devUri, null);
@@ -329,7 +348,8 @@ public class Aware_Provider extends ContentProvider {
                 throw new SQLException("Failed to insert row into " + uri);
             case SETTING:
                 long sett_id = database.insertWithOnConflict(DATABASE_TABLES[1], Aware_Settings.SETTING_KEY, values, SQLiteDatabase.CONFLICT_IGNORE);
-                if (sett_id > 0) {
+                if (sett_id > 0)
+                {
                     Uri settUri = ContentUris.withAppendedId(
                             Aware_Settings.CONTENT_URI, sett_id);
                     getContext().getContentResolver().notifyChange(settUri, null);
@@ -341,7 +361,8 @@ public class Aware_Provider extends ContentProvider {
                 throw new SQLException("Failed to insert row into " + uri);
             case PLUGIN:
                 long plug_id = database.insertWithOnConflict(DATABASE_TABLES[2], Aware_Plugins.PLUGIN_NAME, values, SQLiteDatabase.CONFLICT_IGNORE);
-                if (plug_id > 0) {
+                if (plug_id > 0)
+                {
                     Uri settUri = ContentUris.withAppendedId(Aware_Plugins.CONTENT_URI, plug_id);
                     getContext().getContentResolver().notifyChange(settUri, null);
                     database.setTransactionSuccessful();
@@ -352,7 +373,8 @@ public class Aware_Provider extends ContentProvider {
                 throw new SQLException("Failed to insert row into " + uri);
             case STUDY:
                 long study_id = database.insertWithOnConflict(DATABASE_TABLES[3], Aware_Studies.STUDY_DEVICE_ID, values, SQLiteDatabase.CONFLICT_IGNORE);
-                if (study_id > 0) {
+                if (study_id > 0)
+                {
                     Uri settUri = ContentUris.withAppendedId(Aware_Studies.CONTENT_URI, study_id);
                     getContext().getContentResolver().notifyChange(settUri, null);
                     database.setTransactionSuccessful();
@@ -363,7 +385,8 @@ public class Aware_Provider extends ContentProvider {
                 throw new SQLException("Failed to insert row into " + uri);
             case LOG:
                 long log_id = database.insertWithOnConflict(DATABASE_TABLES[4], Aware_Log.LOG_DEVICE_ID, values, SQLiteDatabase.CONFLICT_IGNORE);
-                if (log_id > 0) {
+                if (log_id > 0)
+                {
                     Uri settUri = ContentUris.withAppendedId(Aware_Log.CONTENT_URI, log_id);
                     getContext().getContentResolver().notifyChange(settUri, null);
                     database.setTransactionSuccessful();
@@ -379,7 +402,8 @@ public class Aware_Provider extends ContentProvider {
     }
 
     @Override
-    public boolean onCreate() {
+    public boolean onCreate()
+    {
         AUTHORITY = getContext().getPackageName() + ".provider.aware";
 
         sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
@@ -457,13 +481,15 @@ public class Aware_Provider extends ContentProvider {
      * Query entries from the database
      */
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder)
+    {
 
         initialiseDatabase();
         if (database == null) return null;
 
         SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
-        switch (sUriMatcher.match(uri)) {
+        switch (sUriMatcher.match(uri))
+        {
             case DEVICE_INFO:
                 qb.setTables(DATABASE_TABLES[0]);
                 qb.setProjectionMap(deviceMap);
@@ -487,11 +513,14 @@ public class Aware_Provider extends ContentProvider {
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
         }
-        try {
+        try
+        {
             Cursor c = qb.query(database, projection, selection, selectionArgs, null, null, sortOrder);
             c.setNotificationUri(getContext().getContentResolver(), uri);
             return c;
-        } catch (IllegalStateException e) {
+        }
+        catch (IllegalStateException e)
+        {
             if (Aware.DEBUG) Log.e(Aware.TAG, e.getMessage());
             return null;
         }
@@ -501,7 +530,8 @@ public class Aware_Provider extends ContentProvider {
      * Update application on the database
      */
     @Override
-    public synchronized int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+    public synchronized int update(Uri uri, ContentValues values, String selection, String[] selectionArgs)
+    {
 
         initialiseDatabase();
         if (database == null) return 0;
@@ -509,7 +539,8 @@ public class Aware_Provider extends ContentProvider {
         database.beginTransaction();
 
         int count;
-        switch (sUriMatcher.match(uri)) {
+        switch (sUriMatcher.match(uri))
+        {
             case DEVICE_INFO:
                 count = database.update(DATABASE_TABLES[0], values, selection, selectionArgs);
                 break;

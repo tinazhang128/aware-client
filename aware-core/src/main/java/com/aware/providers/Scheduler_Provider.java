@@ -24,7 +24,8 @@ import java.util.HashMap;
 /**
  * Scheduler Provider: keeps a record of scheduled tasks that need to be performed on triggered events
  */
-public class Scheduler_Provider extends ContentProvider {
+public class Scheduler_Provider extends ContentProvider
+{
 
     public static final int DATABASE_VERSION = 3;
 
@@ -37,8 +38,10 @@ public class Scheduler_Provider extends ContentProvider {
     private final int SCHEDULER = 1;
     private final int SCHEDULER_ID = 2;
 
-    public static final class Scheduler_Data implements BaseColumns {
-        private Scheduler_Data() {
+    public static final class Scheduler_Data implements BaseColumns
+    {
+        private Scheduler_Data()
+        {
         }
 
         public static final Uri CONTENT_URI = Uri.parse("content://" + Scheduler_Provider.AUTHORITY + "/scheduler");
@@ -72,7 +75,8 @@ public class Scheduler_Provider extends ContentProvider {
     private DatabaseHelper dbHelper;
     private static SQLiteDatabase database;
 
-    private void initialiseDatabase() {
+    private void initialiseDatabase()
+    {
         if (dbHelper == null)
             dbHelper = new DatabaseHelper(getContext(), DATABASE_NAME, null, DATABASE_VERSION, DATABASE_TABLES, TABLES_FIELDS);
         if (database == null)
@@ -83,14 +87,16 @@ public class Scheduler_Provider extends ContentProvider {
      * Delete entry from the database
      */
     @Override
-    public synchronized int delete(Uri uri, String selection, String[] selectionArgs) {
+    public synchronized int delete(Uri uri, String selection, String[] selectionArgs)
+    {
 
         initialiseDatabase();
 
         database.beginTransaction();
 
         int count;
-        switch (sUriMatcher.match(uri)) {
+        switch (sUriMatcher.match(uri))
+        {
             case SCHEDULER:
                 count = database.delete(DATABASE_TABLES[0], selection, selectionArgs);
                 break;
@@ -108,8 +114,10 @@ public class Scheduler_Provider extends ContentProvider {
     }
 
     @Override
-    public String getType(Uri uri) {
-        switch (sUriMatcher.match(uri)) {
+    public String getType(Uri uri)
+    {
+        switch (sUriMatcher.match(uri))
+        {
             case SCHEDULER:
                 return Scheduler_Data.CONTENT_TYPE;
             case SCHEDULER_ID:
@@ -123,7 +131,8 @@ public class Scheduler_Provider extends ContentProvider {
      * Insert entry to the database
      */
     @Override
-    public synchronized Uri insert(Uri uri, ContentValues initialValues) {
+    public synchronized Uri insert(Uri uri, ContentValues initialValues)
+    {
 
         initialiseDatabase();
 
@@ -131,10 +140,12 @@ public class Scheduler_Provider extends ContentProvider {
 
         database.beginTransaction();
 
-        switch (sUriMatcher.match(uri)) {
+        switch (sUriMatcher.match(uri))
+        {
             case SCHEDULER:
                 long screen_id = database.insertWithOnConflict(DATABASE_TABLES[0], Scheduler_Data.DEVICE_ID, values, SQLiteDatabase.CONFLICT_IGNORE);
-                if (screen_id > 0) {
+                if (screen_id > 0)
+                {
                     Uri screenUri = ContentUris.withAppendedId(Scheduler_Data.CONTENT_URI, screen_id);
                     getContext().getContentResolver().notifyChange(screenUri, null);
                     database.setTransactionSuccessful();
@@ -150,7 +161,8 @@ public class Scheduler_Provider extends ContentProvider {
     }
 
     @Override
-    public boolean onCreate() {
+    public boolean onCreate()
+    {
         AUTHORITY = getContext().getPackageName() + ".provider.scheduler";
 
         sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
@@ -173,12 +185,14 @@ public class Scheduler_Provider extends ContentProvider {
      * Query entries from the database
      */
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder)
+    {
 
         initialiseDatabase();
 
         SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
-        switch (sUriMatcher.match(uri)) {
+        switch (sUriMatcher.match(uri))
+        {
             case SCHEDULER:
                 qb.setTables(DATABASE_TABLES[0]);
                 qb.setProjectionMap(dataMap);
@@ -186,11 +200,14 @@ public class Scheduler_Provider extends ContentProvider {
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
         }
-        try {
+        try
+        {
             Cursor c = qb.query(database, projection, selection, selectionArgs, null, null, sortOrder);
             c.setNotificationUri(getContext().getContentResolver(), uri);
             return c;
-        } catch (IllegalStateException e) {
+        }
+        catch (IllegalStateException e)
+        {
             if (Aware.DEBUG) Log.e(Aware.TAG, e.getMessage());
             return null;
         }
@@ -200,14 +217,16 @@ public class Scheduler_Provider extends ContentProvider {
      * Update application on the database
      */
     @Override
-    public synchronized int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+    public synchronized int update(Uri uri, ContentValues values, String selection, String[] selectionArgs)
+    {
 
         initialiseDatabase();
 
         database.beginTransaction();
 
         int count;
-        switch (sUriMatcher.match(uri)) {
+        switch (sUriMatcher.match(uri))
+        {
             case SCHEDULER:
                 count = database.update(DATABASE_TABLES[0], values, selection, selectionArgs);
                 break;

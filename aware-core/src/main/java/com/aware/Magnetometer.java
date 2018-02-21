@@ -41,7 +41,8 @@ import java.lang.Math;
  *
  * @author df
  */
-public class Magnetometer extends Aware_Sensor implements SensorEventListener {
+public class Magnetometer extends Aware_Sensor implements SensorEventListener
+{
 
     /**
      * Logging tag (default = "AWARE::Magnetometer")
@@ -85,29 +86,35 @@ public class Magnetometer extends Aware_Sensor implements SensorEventListener {
 
     private static DataLabel dataLabeler = new DataLabel();
 
-    public static class DataLabel extends BroadcastReceiver {
+    public static class DataLabel extends BroadcastReceiver
+    {
         @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(ACTION_AWARE_MAGNETOMETER_LABEL)) {
+        public void onReceive(Context context, Intent intent)
+        {
+            if (intent.getAction().equals(ACTION_AWARE_MAGNETOMETER_LABEL))
+            {
                 LABEL = intent.getStringExtra(EXTRA_LABEL);
             }
         }
     }
 
     @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    public void onAccuracyChanged(Sensor sensor, int accuracy)
+    {
         //We log current accuracy on the sensor changed event
     }
 
     @Override
-    public void onSensorChanged(SensorEvent event) {
+    public void onSensorChanged(SensorEvent event)
+    {
         long TS = System.currentTimeMillis();
-        if (ENFORCE_FREQUENCY && TS < LAST_TS + FREQUENCY/1000 )
+        if (ENFORCE_FREQUENCY && TS < LAST_TS + FREQUENCY / 1000)
             return;
         if (LAST_VALUES != null && THRESHOLD > 0 &&
                 Math.abs(event.values[0] - LAST_VALUES[0]) < THRESHOLD &&
                 Math.abs(event.values[0] - LAST_VALUES[1]) < THRESHOLD &&
-                Math.abs(event.values[0] - LAST_VALUES[2]) < THRESHOLD) {
+                Math.abs(event.values[0] - LAST_VALUES[2]) < THRESHOLD)
+        {
             return;
         }
 
@@ -131,20 +138,27 @@ public class Magnetometer extends Aware_Sensor implements SensorEventListener {
 
         if (Aware.DEBUG) Log.d(TAG, "Magnetometer:" + rowData.toString());
 
-        if (data_values.size() < 250 && TS < LAST_SAVE + 300000) {
+        if (data_values.size() < 250 && TS < LAST_SAVE + 300000)
+        {
             return;
         }
 
         ContentValues[] data_buffer = new ContentValues[data_values.size()];
         data_values.toArray(data_buffer);
 
-        try {
-            if (!Aware.getSetting(getApplicationContext(), Aware_Preferences.DEBUG_DB_SLOW).equals("true")) {
+        try
+        {
+            if (!Aware.getSetting(getApplicationContext(), Aware_Preferences.DEBUG_DB_SLOW).equals("true"))
+            {
                 new AsyncStore().execute(data_buffer);
             }
-        } catch (SQLiteException e) {
+        }
+        catch (SQLiteException e)
+        {
             if (Aware.DEBUG) Log.d(TAG, e.getMessage());
-        } catch (SQLException e) {
+        }
+        catch (SQLException e)
+        {
             if (Aware.DEBUG) Log.d(TAG, e.getMessage());
         }
         data_values.clear();
@@ -154,9 +168,11 @@ public class Magnetometer extends Aware_Sensor implements SensorEventListener {
     /**
      * Database I/O on different thread
      */
-    private class AsyncStore extends AsyncTask<ContentValues[], Void, Void> {
+    private class AsyncStore extends AsyncTask<ContentValues[], Void, Void>
+    {
         @Override
-        protected Void doInBackground(ContentValues[]... data) {
+        protected Void doInBackground(ContentValues[]... data)
+        {
             getContentResolver().bulkInsert(Magnetometer_Data.CONTENT_URI, data[0]);
             return null;
         }
@@ -168,20 +184,24 @@ public class Magnetometer extends Aware_Sensor implements SensorEventListener {
      * @param context
      * @return hz
      */
-    public static int getFrequency(Context context) {
+    public static int getFrequency(Context context)
+    {
         int hz = 0;
         String[] columns = new String[]{"count(*) as frequency", "datetime(" + Magnetometer_Data.TIMESTAMP + "/1000, 'unixepoch','localtime') as sample_time"};
         Cursor qry = context.getContentResolver().query(Magnetometer_Data.CONTENT_URI, columns, "1) group by (sample_time", null, "sample_time DESC LIMIT 1 OFFSET 2");
-        if (qry != null && qry.moveToFirst()) {
+        if (qry != null && qry.moveToFirst())
+        {
             hz = qry.getInt(0);
         }
         if (qry != null && !qry.isClosed()) qry.close();
         return hz;
     }
 
-    private void saveSensorDevice(Sensor sensor) {
+    private void saveSensorDevice(Sensor sensor)
+    {
         Cursor sensorInfo = getContentResolver().query(Magnetometer_Sensor.CONTENT_URI, null, null, null, null);
-        if (sensorInfo == null || !sensorInfo.moveToFirst()) {
+        if (sensorInfo == null || !sensorInfo.moveToFirst())
+        {
             ContentValues rowData = new ContentValues();
             rowData.put(Magnetometer_Sensor.DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
             rowData.put(Magnetometer_Sensor.TIMESTAMP, System.currentTimeMillis());
@@ -206,7 +226,8 @@ public class Magnetometer extends Aware_Sensor implements SensorEventListener {
     }
 
     @Override
-    public void onCreate() {
+    public void onCreate()
+    {
         super.onCreate();
 
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -233,7 +254,8 @@ public class Magnetometer extends Aware_Sensor implements SensorEventListener {
     }
 
     @Override
-    public void onDestroy() {
+    public void onDestroy()
+    {
         super.onDestroy();
 
         sensorHandler.removeCallbacksAndMessages(null);
@@ -248,24 +270,30 @@ public class Magnetometer extends Aware_Sensor implements SensorEventListener {
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
+    public int onStartCommand(Intent intent, int flags, int startId)
+    {
         super.onStartCommand(intent, flags, startId);
 
-        if (PERMISSIONS_OK) {
-            if (mMagnetometer == null) {
+        if (PERMISSIONS_OK)
+        {
+            if (mMagnetometer == null)
+            {
                 if (Aware.DEBUG) Log.w(TAG, "This device does not have a magnetometer!");
                 Aware.setSetting(this, Aware_Preferences.STATUS_MAGNETOMETER, false);
                 stopSelf();
-            } else {
+            } else
+            {
                 DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
                 Aware.setSetting(this, Aware_Preferences.STATUS_MAGNETOMETER, true);
                 saveSensorDevice(mMagnetometer);
 
-                if (Aware.getSetting(this, Aware_Preferences.FREQUENCY_MAGNETOMETER).length() == 0) {
+                if (Aware.getSetting(this, Aware_Preferences.FREQUENCY_MAGNETOMETER).length() == 0)
+                {
                     Aware.setSetting(this, Aware_Preferences.FREQUENCY_MAGNETOMETER, 200000);
                 }
 
-                if (Aware.getSetting(this, Aware_Preferences.THRESHOLD_MAGNETOMETER).length() == 0) {
+                if (Aware.getSetting(this, Aware_Preferences.THRESHOLD_MAGNETOMETER).length() == 0)
+                {
                     Aware.setSetting(this, Aware_Preferences.THRESHOLD_MAGNETOMETER, 0.0);
                 }
 
@@ -276,7 +304,8 @@ public class Magnetometer extends Aware_Sensor implements SensorEventListener {
 
                 if (FREQUENCY != new_frequency
                         || THRESHOLD != new_threshold
-                        || ENFORCE_FREQUENCY != new_enforce_frequency) {
+                        || ENFORCE_FREQUENCY != new_enforce_frequency)
+                {
 
                     sensorHandler.removeCallbacksAndMessages(null);
                     mSensorManager.unregisterListener(this, mMagnetometer);
@@ -297,7 +326,8 @@ public class Magnetometer extends Aware_Sensor implements SensorEventListener {
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
+    public IBinder onBind(Intent intent)
+    {
         return null;
     }
 }

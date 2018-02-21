@@ -33,7 +33,8 @@ import com.aware.utils.Encrypter;
  *
  * @author denzil
  */
-public class Communication extends Aware_Sensor {
+public class Communication extends Aware_Sensor
+{
 
     /**
      * Logging tag (default = "AWARE::Communication")
@@ -98,25 +99,32 @@ public class Communication extends Aware_Sensor {
      *
      * @author df
      */
-    private class CallsObserver extends ContentObserver {
-        public CallsObserver(Handler handler) {
+    private class CallsObserver extends ContentObserver
+    {
+        public CallsObserver(Handler handler)
+        {
             super(handler);
         }
 
         @Override
-        public void onChange(boolean selfChange) {
+        public void onChange(boolean selfChange)
+        {
             super.onChange(selfChange);
 
             Cursor lastCall = getContentResolver().query(Calls.CONTENT_URI, null, null, null, Calls.DATE + " DESC LIMIT 1");
-            if (lastCall != null && lastCall.moveToFirst()) {
+            if (lastCall != null && lastCall.moveToFirst())
+            {
 
                 Cursor exists = getContentResolver().query(Calls_Data.CONTENT_URI, null, Calls_Data.TIMESTAMP + "=" + lastCall.getLong(lastCall.getColumnIndex(Calls.DATE)), null, null);
-                if (exists == null || exists.moveToFirst() == false) {
+                if (exists == null || exists.moveToFirst() == false)
+                {
 
-                    switch (lastCall.getInt(lastCall.getColumnIndex(Calls.TYPE))) {
+                    switch (lastCall.getInt(lastCall.getColumnIndex(Calls.TYPE)))
+                    {
                         case Calls.INCOMING_TYPE:
 
-                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_CALLS).equals("true")) {
+                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_CALLS).equals("true"))
+                            {
                                 ContentValues received = new ContentValues();
                                 received.put(Calls_Data.TIMESTAMP, lastCall.getLong(lastCall.getColumnIndex(Calls.DATE)));
                                 received.put(Calls_Data.DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
@@ -124,16 +132,22 @@ public class Communication extends Aware_Sensor {
                                 received.put(Calls_Data.DURATION, lastCall.getInt(lastCall.getColumnIndex(Calls.DURATION)));
                                 received.put(Calls_Data.TRACE, Encrypter.hashPhone(getApplicationContext(), lastCall.getString(lastCall.getColumnIndex(Calls.NUMBER))));
 
-                                try {
+                                try
+                                {
                                     getContentResolver().insert(Calls_Data.CONTENT_URI, received);
-                                } catch (SQLiteException e) {
+                                }
+                                catch (SQLiteException e)
+                                {
                                     if (Aware.DEBUG) Log.d(TAG, e.getMessage());
-                                } catch (SQLException e) {
+                                }
+                                catch (SQLException e)
+                                {
                                     if (Aware.DEBUG) Log.d(TAG, e.getMessage());
                                 }
                             }
 
-                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true")) {
+                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true"))
+                            {
                                 if (Aware.DEBUG) Log.d(TAG, ACTION_AWARE_CALL_ACCEPTED);
                                 Intent callAccepted = new Intent(ACTION_AWARE_CALL_ACCEPTED);
                                 sendBroadcast(callAccepted);
@@ -141,46 +155,60 @@ public class Communication extends Aware_Sensor {
 
                             break;
                         case Calls.MISSED_TYPE:
-                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_CALLS).equals("true")) {
+                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_CALLS).equals("true"))
+                            {
                                 ContentValues missed = new ContentValues();
                                 missed.put(Calls_Data.TIMESTAMP, lastCall.getLong(lastCall.getColumnIndex(Calls.DATE)));
                                 missed.put(Calls_Data.DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
                                 missed.put(Calls_Data.TYPE, Calls.MISSED_TYPE);
                                 missed.put(Calls_Data.DURATION, lastCall.getInt(lastCall.getColumnIndex(Calls.DURATION)));
                                 missed.put(Calls_Data.TRACE, Encrypter.hashPhone(getApplicationContext(), lastCall.getString(lastCall.getColumnIndex(Calls.NUMBER))));
-                                try {
+                                try
+                                {
                                     getContentResolver().insert(Calls_Data.CONTENT_URI, missed);
-                                } catch (SQLiteException e) {
+                                }
+                                catch (SQLiteException e)
+                                {
                                     if (Aware.DEBUG) Log.d(TAG, e.getMessage());
-                                } catch (SQLException e) {
+                                }
+                                catch (SQLException e)
+                                {
                                     if (Aware.DEBUG) Log.d(TAG, e.getMessage());
                                 }
                             }
 
-                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true")) {
+                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true"))
+                            {
                                 if (Aware.DEBUG) Log.d(TAG, ACTION_AWARE_CALL_MISSED);
                                 Intent callMissed = new Intent(ACTION_AWARE_CALL_MISSED);
                                 sendBroadcast(callMissed);
                             }
                             break;
                         case Calls.OUTGOING_TYPE:
-                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_CALLS).equals("true")) {
+                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_CALLS).equals("true"))
+                            {
                                 ContentValues outgoing = new ContentValues();
                                 outgoing.put(Calls_Data.TIMESTAMP, lastCall.getLong(lastCall.getColumnIndex(Calls.DATE)));
                                 outgoing.put(Calls_Data.DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
                                 outgoing.put(Calls_Data.TYPE, Calls.OUTGOING_TYPE);
                                 outgoing.put(Calls_Data.DURATION, lastCall.getInt(lastCall.getColumnIndex(Calls.DURATION)));
                                 outgoing.put(Calls_Data.TRACE, Encrypter.hashPhone(getApplicationContext(), lastCall.getString(lastCall.getColumnIndex(Calls.NUMBER))));
-                                try {
+                                try
+                                {
                                     getContentResolver().insert(Calls_Data.CONTENT_URI, outgoing);
-                                } catch (SQLiteException e) {
+                                }
+                                catch (SQLiteException e)
+                                {
                                     if (Aware.DEBUG) Log.d(TAG, e.getMessage());
-                                } catch (SQLException e) {
+                                }
+                                catch (SQLException e)
+                                {
                                     if (Aware.DEBUG) Log.d(TAG, e.getMessage());
                                 }
                             }
 
-                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true")) {
+                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true"))
+                            {
                                 if (Aware.DEBUG) Log.d(TAG, ACTION_AWARE_CALL_MADE);
                                 Intent callOutgoing = new Intent(ACTION_AWARE_CALL_MADE);
                                 sendBroadcast(callOutgoing);
@@ -194,63 +222,83 @@ public class Communication extends Aware_Sensor {
         }
     }
 
-    private class MessagesObserver extends ContentObserver {
-        public MessagesObserver(Handler handler) {
+    private class MessagesObserver extends ContentObserver
+    {
+        public MessagesObserver(Handler handler)
+        {
             super(handler);
         }
 
         @Override
-        public void onChange(boolean selfChange) {
+        public void onChange(boolean selfChange)
+        {
             super.onChange(selfChange);
 
             Cursor lastMessage = getContentResolver().query(MESSAGES_CONTENT_URI, null, null, null, "date DESC LIMIT 1");
-            if (lastMessage != null && lastMessage.moveToFirst()) {
+            if (lastMessage != null && lastMessage.moveToFirst())
+            {
 
                 Cursor exists = getContentResolver().query(Messages_Data.CONTENT_URI, null, Messages_Data.TIMESTAMP + "=" + lastMessage.getLong(lastMessage.getColumnIndex("date")), null, null);
-                if (exists == null || !exists.moveToFirst()) {
+                if (exists == null || !exists.moveToFirst())
+                {
 
-                    switch (lastMessage.getInt(lastMessage.getColumnIndex("type"))) {
+                    switch (lastMessage.getInt(lastMessage.getColumnIndex("type")))
+                    {
                         case MESSAGE_INBOX:
-                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_MESSAGES).equals("true")) {
+                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_MESSAGES).equals("true"))
+                            {
                                 ContentValues inbox = new ContentValues();
                                 inbox.put(Messages_Data.TIMESTAMP, lastMessage.getLong(lastMessage.getColumnIndex("date")));
                                 inbox.put(Messages_Data.DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
                                 inbox.put(Messages_Data.TYPE, MESSAGE_INBOX);
                                 inbox.put(Messages_Data.TRACE, Encrypter.hashPhone(getApplicationContext(), lastMessage.getString(lastMessage.getColumnIndex("address"))));
 
-                                try {
+                                try
+                                {
                                     getContentResolver().insert(Messages_Data.CONTENT_URI, inbox);
-                                } catch (SQLiteException e) {
+                                }
+                                catch (SQLiteException e)
+                                {
                                     if (Aware.DEBUG) Log.d(TAG, e.getMessage());
-                                } catch (SQLException e) {
+                                }
+                                catch (SQLException e)
+                                {
                                     if (Aware.DEBUG) Log.d(TAG, e.getMessage());
                                 }
                             }
 
-                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true")) {
+                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true"))
+                            {
                                 if (Aware.DEBUG) Log.d(TAG, ACTION_AWARE_MESSAGE_RECEIVED);
                                 Intent messageReceived = new Intent(ACTION_AWARE_MESSAGE_RECEIVED);
                                 sendBroadcast(messageReceived);
                             }
                             break;
                         case MESSAGE_SENT:
-                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_MESSAGES).equals("true")) {
+                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_MESSAGES).equals("true"))
+                            {
                                 ContentValues sent = new ContentValues();
                                 sent.put(Messages_Data.TIMESTAMP, lastMessage.getLong(lastMessage.getColumnIndex("date")));
                                 sent.put(Messages_Data.DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
                                 sent.put(Messages_Data.TYPE, MESSAGE_SENT);
                                 sent.put(Messages_Data.TRACE, Encrypter.hashPhone(getApplicationContext(), lastMessage.getString(lastMessage.getColumnIndex("address"))));
 
-                                try {
+                                try
+                                {
                                     getContentResolver().insert(Messages_Data.CONTENT_URI, sent);
-                                } catch (SQLiteException e) {
+                                }
+                                catch (SQLiteException e)
+                                {
                                     if (Aware.DEBUG) Log.d(TAG, e.getMessage());
-                                } catch (SQLException e) {
+                                }
+                                catch (SQLException e)
+                                {
                                     if (Aware.DEBUG) Log.d(TAG, e.getMessage());
                                 }
                             }
 
-                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true")) {
+                            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true"))
+                            {
                                 if (Aware.DEBUG) Log.d(TAG, ACTION_AWARE_MESSAGE_SENT);
                                 Intent messageSent = new Intent(ACTION_AWARE_MESSAGE_SENT);
                                 sendBroadcast(messageSent);
@@ -266,13 +314,17 @@ public class Communication extends Aware_Sensor {
 
     private PhoneState phoneState = new PhoneState();
 
-    private class PhoneState extends PhoneStateListener {
+    private class PhoneState extends PhoneStateListener
+    {
         @Override
-        public void onCallStateChanged(int state, String incomingNumber) {
+        public void onCallStateChanged(int state, String incomingNumber)
+        {
             super.onCallStateChanged(state, incomingNumber);
 
-            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true")) {
-                switch (state) {
+            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true"))
+            {
+                switch (state)
+                {
                     case TelephonyManager.CALL_STATE_RINGING:
                         if (Aware.DEBUG) Log.d(TAG, ACTION_AWARE_CALL_RINGING);
                         Intent callRinging = new Intent(ACTION_AWARE_CALL_RINGING);
@@ -294,12 +346,14 @@ public class Communication extends Aware_Sensor {
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
+    public IBinder onBind(Intent intent)
+    {
         return null;
     }
 
     @Override
-    public void onCreate() {
+    public void onCreate()
+    {
         super.onCreate();
 
         telephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
@@ -320,26 +374,34 @@ public class Communication extends Aware_Sensor {
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
+    public int onStartCommand(Intent intent, int flags, int startId)
+    {
         super.onStartCommand(intent, flags, startId);
 
-        if (PERMISSIONS_OK) {
+        if (PERMISSIONS_OK)
+        {
             DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
-            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_CALLS).equals("true")) {
+            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_CALLS).equals("true"))
+            {
                 getContentResolver().registerContentObserver(Calls.CONTENT_URI, true, callsObs);
-            } else {
+            } else
+            {
                 getContentResolver().unregisterContentObserver(callsObs);
             }
 
-            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_MESSAGES).equals("true")) {
+            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_MESSAGES).equals("true"))
+            {
                 getContentResolver().registerContentObserver(MESSAGES_CONTENT_URI, true, msgsObs);
-            } else {
+            } else
+            {
                 getContentResolver().unregisterContentObserver(msgsObs);
             }
 
-            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true")) {
+            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true"))
+            {
                 telephonyManager.listen(phoneState, PhoneStateListener.LISTEN_CALL_STATE);
-            } else {
+            } else
+            {
                 telephonyManager.listen(phoneState, PhoneStateListener.LISTEN_NONE);
             }
 
@@ -350,7 +412,8 @@ public class Communication extends Aware_Sensor {
     }
 
     @Override
-    public void onDestroy() {
+    public void onDestroy()
+    {
         super.onDestroy();
 
         getContentResolver().unregisterContentObserver(callsObs);

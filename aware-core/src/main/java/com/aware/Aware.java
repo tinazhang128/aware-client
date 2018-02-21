@@ -92,7 +92,8 @@ import dalvik.system.DexFile;
  *
  * @author denzil
  */
-public class Aware extends Service {
+public class Aware extends Service
+{
     /**
      * Debug flag (default = false).
      */
@@ -217,12 +218,14 @@ public class Aware extends Service {
     private static final int AWARE_BATTERY_OPTIMIZATION_ID = 567567;
 
     @Override
-    public IBinder onBind(Intent intent) {
+    public IBinder onBind(Intent intent)
+    {
         return null;
     }
 
     @Override
-    public void onCreate() {
+    public void onCreate()
+    {
         super.onCreate();
 
         IntentFilter storage = new IntentFilter();
@@ -231,11 +234,12 @@ public class Aware extends Service {
         storage.addDataScheme("file");
         registerReceiver(storage_BR, storage);
 
-        //IntentFilter aware_actions = new IntentFilter();
-        //aware_actions.addAction(Aware.ACTION_AWARE_CLEAR_DATA);
-        //aware_actions.addAction(Aware.ACTION_AWARE_SYNC_DATA);
-        //aware_actions.addAction(Aware.ACTION_QUIT_STUDY);
-        //registerReceiver(aware_BR, aware_actions);
+        // TODO dormant code, undocumented.
+        // IntentFilter aware_actions = new IntentFilter();
+        // aware_actions.addAction(Aware.ACTION_AWARE_CLEAR_DATA);
+        // aware_actions.addAction(Aware.ACTION_AWARE_SYNC_DATA);
+        // aware_actions.addAction(Aware.ACTION_QUIT_STUDY);
+        // registerReceiver(aware_BR, aware_actions);
 
         IntentFilter boot = new IntentFilter();
         boot.addAction(Intent.ACTION_BOOT_COMPLETED);
@@ -252,13 +256,16 @@ public class Aware extends Service {
         AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
         Intent scheduler = new Intent(this, Scheduler.class);
         PendingIntent repeating = PendingIntent.getService(getApplicationContext(), 0, scheduler, PendingIntent.FLAG_UPDATE_CURRENT);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        {
             am.setAlarmClock(new AlarmManager.AlarmClockInfo(System.currentTimeMillis() + (60000), repeating), repeating); //every minute
-        } else {
+        } else
+        {
             am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 60000, 60000, repeating);
         }
 
-        if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+        if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED))
+        {
             stopSelf();
             return;
         }
@@ -267,24 +274,32 @@ public class Aware extends Service {
     }
 
     private final Foreground_Priority foregroundMgr = new Foreground_Priority();
-    public class Foreground_Priority extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            //do nothing unless it's the client or a standalone application
-            if (! (context.getPackageName().equals("com.aware.phone") || context.getApplicationContext().getResources().getBoolean(R.bool.standalone))) return;
 
-            if (intent.getAction().equalsIgnoreCase(Aware.ACTION_AWARE_PRIORITY_FOREGROUND)) {
+    public class Foreground_Priority extends BroadcastReceiver
+    {
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            //do nothing unless it's the client or a standalone application
+            if (!(context.getPackageName().equals("com.aware.phone") || context.getApplicationContext().getResources().getBoolean(R.bool.standalone)))
+                return;
+
+            if (intent.getAction().equalsIgnoreCase(Aware.ACTION_AWARE_PRIORITY_FOREGROUND))
+            {
                 if (DEBUG) Log.d(TAG, "Setting AWARE with foreground priority");
                 foreground(true);
-            } else if (intent.getAction().equalsIgnoreCase(Aware.ACTION_AWARE_PRIORITY_BACKGROUND)) {
+            } else if (intent.getAction().equalsIgnoreCase(Aware.ACTION_AWARE_PRIORITY_BACKGROUND))
+            {
                 if (DEBUG) Log.d(TAG, "Setting AWARE with background priority");
                 foreground(false);
             }
         }
     }
 
-    public void foreground(boolean enable) {
-        if (enable) {
+    public void foreground(boolean enable)
+    {
+        if (enable)
+        {
             Intent aware = new Intent(this, Aware.class);
             PendingIntent onTap = PendingIntent.getService(this, 0, aware, 0);
 
@@ -299,7 +314,8 @@ public class Aware extends Service {
             mBuilder.setOnlyAlertOnce(true);
             mBuilder.setContentIntent(onTap);
 
-            if (Aware.isStudy(this)) {
+            if (Aware.isStudy(this))
+            {
                 mBuilder.addAction(R.drawable.ic_stat_aware_sync, getApplicationContext().getResources().getString(R.string.foreground_notification_sync_text), onSync);
             }
 
@@ -307,14 +323,17 @@ public class Aware extends Service {
             not.defaults = 0;
 
             startForeground(Aware.AWARE_FOREGROUND_SERVICE, not);
-        } else {
+        } else
+        {
             stopForeground(true);
         }
     }
 
-    private class AsyncPing extends AsyncTask<Void, Void, Boolean> {
+    private class AsyncPing extends AsyncTask<Void, Void, Boolean>
+    {
         @Override
-        protected Boolean doInBackground(Void... params) {
+        protected Boolean doInBackground(Void... params)
+        {
             // Download the certificate, and block since we are already running in background
             // and we need the certificate immediately.
             SSLManager.handleUrl(getApplicationContext(), "https://api.awareframework.com/index.php", true);
@@ -324,19 +343,27 @@ public class Aware extends Service {
             device_ping.put(Aware_Preferences.DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
             device_ping.put("ping", String.valueOf(System.currentTimeMillis()));
             device_ping.put("platform", "android");
-            try {
+            try
+            {
                 PackageInfo package_info = getPackageManager().getPackageInfo(getPackageName(), 0);
+
                 device_ping.put("package_name", package_info.packageName);
-                if (package_info.packageName.equals("com.aware.phone") || getResources().getBoolean(R.bool.standalone)) {
+                if (package_info.packageName.equals("com.aware.phone") || getResources().getBoolean(R.bool.standalone))
+                {
                     device_ping.put("package_version_code", String.valueOf(package_info.versionCode));
                     device_ping.put("package_version_name", String.valueOf(package_info.versionName));
                 }
-            } catch (PackageManager.NameNotFoundException e) {
+            }
+            catch (PackageManager.NameNotFoundException e)
+            {
             }
 
-            try {
+            try
+            {
                 new Https(SSLManager.getHTTPS(getApplicationContext(), "https://api.awareframework.com/index.php")).dataPOST("https://api.awareframework.com/index.php/awaredev/alive", device_ping, true);
-            } catch (FileNotFoundException e) {
+            }
+            catch (FileNotFoundException e)
+            {
                 e.printStackTrace();
             }
             return true;
@@ -350,14 +377,17 @@ public class Aware extends Service {
      * @param context
      * @return
      */
-    public static boolean isBatteryOptimizationIgnored(Context context, String package_name) {
+    public static boolean isBatteryOptimizationIgnored(Context context, String package_name)
+    {
         boolean is_ignored = true;
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1)
+        {
             PowerManager pm = (PowerManager) context.getApplicationContext().getSystemService(Context.POWER_SERVICE);
             is_ignored = pm.isIgnoringBatteryOptimizations(package_name);
         }
 
-        if (!is_ignored) {
+        if (!is_ignored)
+        {
             NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context);
             mBuilder.setSmallIcon(R.drawable.ic_stat_aware_recharge);
             mBuilder.setContentTitle(context.getApplicationContext().getResources().getString(R.string.aware_activate_battery_optimize_ignore_title));
@@ -381,24 +411,29 @@ public class Aware extends Service {
         return is_ignored;
     }
 
-    private class AsyncStudyCheck extends AsyncTask<Void, Void, Boolean> {
+    private class AsyncStudyCheck extends AsyncTask<Void, Void, Boolean>
+    {
 
         @Override
-        protected Boolean doInBackground(Void... params) {
+        protected Boolean doInBackground(Void... params)
+        {
 
             //Ping AWARE's server with awareContext device's information for framework's statistics log
             Hashtable<String, String> studyCheck = new Hashtable<>();
             studyCheck.put(Aware_Preferences.DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
             studyCheck.put("study_check", "1");
 
-            try {
+            try
+            {
                 String webserver = Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER);
                 String protocol = webserver.substring(0, webserver.indexOf(":"));
 
                 String study_status;
-                if (protocol.equalsIgnoreCase("https")) {
+                if (protocol.equalsIgnoreCase("https"))
+                {
                     study_status = new Https(SSLManager.getHTTPS(getApplicationContext(), Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER))).dataPOST(Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER), studyCheck, true);
-                } else {
+                } else
+                {
                     study_status = new Http().dataPOST(Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER), studyCheck, true);
                 }
 
@@ -408,54 +443,68 @@ public class Aware extends Service {
                 if (DEBUG)
                     Log.d(Aware.TAG, "Study_status: \n" + study_status);
 
-                try {
+                try
+                {
                     JSONArray status = new JSONArray(study_status);
 
                     JSONObject study = status.getJSONObject(0);
-                    if (!study.getBoolean("status")) {
+                    if (!study.getBoolean("status"))
+                    {
                         return false; //study no longer active, make clients quit the study and reset.
                     }
 
                     //Ignored by standalone apps. They handle their own sensors, so server settings do not apply.
-                    if (!getResources().getBoolean(R.bool.standalone)) {
-                        if (study.getString("config").equalsIgnoreCase("[]")) {
+                    if (!getResources().getBoolean(R.bool.standalone))
+                    {
+                        if (study.getString("config").equalsIgnoreCase("[]"))
+                        {
                             Aware.tweakSettings(getApplicationContext(), new JSONArray(study.getString("config")));
-                        } else if (!study.getString("config").equalsIgnoreCase("[]")) {
+                        } else if (!study.getString("config").equalsIgnoreCase("[]"))
+                        {
                             JSONObject configJSON = new JSONObject(study.getString("config"));
                             Aware.tweakSettings(getApplicationContext(), new JSONArray().put(configJSON));
                         }
                     }
-                } catch (JSONException e) {
+                }
+                catch (JSONException e)
+                {
                     e.printStackTrace();
                 }
-            } catch (FileNotFoundException e) {
+            }
+            catch (FileNotFoundException e)
+            {
                 e.printStackTrace();
             }
             return true;
         }
 
         @Override
-        protected void onCancelled(Boolean aBoolean) {
+        protected void onCancelled(Boolean aBoolean)
+        {
             super.onCancelled(aBoolean);
 
             studyCheck = null;
         }
 
         @Override
-        protected void onPostExecute(Boolean studyStatus) {
+        protected void onPostExecute(Boolean studyStatus)
+        {
             super.onPostExecute(studyStatus);
 
             studyCheck = null;
 
-            if (!studyStatus) {
+            if (!studyStatus)
+            {
                 sendBroadcast(new Intent(Aware.ACTION_QUIT_STUDY));
             }
         }
     }
 
-    private void get_device_info() {
+    private void get_device_info()
+    {
         Cursor awareContextDevice = getContentResolver().query(Aware_Device.CONTENT_URI, null, null, null, null);
-        if (awareContextDevice == null || !awareContextDevice.moveToFirst()) {
+        if (awareContextDevice == null || !awareContextDevice.moveToFirst())
+        {
             ContentValues rowData = new ContentValues();
             rowData.put(Aware_Device.TIMESTAMP, System.currentTimeMillis());
             rowData.put(Aware_Device.DEVICE_ID, Aware.getSetting(this, Aware_Preferences.DEVICE_ID));
@@ -473,7 +522,8 @@ public class Aware extends Service {
             rowData.put(Aware_Device.SDK, String.valueOf(Build.VERSION.SDK_INT));
             rowData.put(Aware_Device.LABEL, Aware.getSetting(this, Aware_Preferences.DEVICE_LABEL));
 
-            try {
+            try
+            {
                 getContentResolver().insert(Aware_Device.CONTENT_URI, rowData);
 
                 Intent deviceData = new Intent(ACTION_AWARE_DEVICE_INFORMATION);
@@ -481,9 +531,13 @@ public class Aware extends Service {
 
                 if (Aware.DEBUG) Log.d(TAG, "Device information:" + rowData.toString());
 
-            } catch (SQLiteException e) {
+            }
+            catch (SQLiteException e)
+            {
                 if (Aware.DEBUG) Log.d(TAG, e.getMessage());
-            } catch (SQLException e) {
+            }
+            catch (SQLException e)
+            {
                 if (Aware.DEBUG) Log.d(TAG, e.getMessage());
             }
         }
@@ -497,7 +551,8 @@ public class Aware extends Service {
      * @param c
      * @return boolean
      */
-    public static boolean is_watch(Context c) {
+    public static boolean is_watch(Context c)
+    {
         UiModeManager uiManager = (UiModeManager) c.getSystemService(Context.UI_MODE_SERVICE);
         return (uiManager.getCurrentModeType() == Configuration.UI_MODE_TYPE_WATCH);
     }
@@ -508,12 +563,14 @@ public class Aware extends Service {
      * @param c
      * @return
      */
-    public static boolean isStudy(Context c) {
+    public static boolean isStudy(Context c)
+    {
         boolean participant = false;
         Cursor study = c.getContentResolver().query(Aware_Provider.Aware_Studies.CONTENT_URI, null, null, null,
                 Aware_Provider.Aware_Studies.STUDY_TIMESTAMP + " DESC LIMIT 1");
 
-        if (study != null && study.moveToFirst()) {
+        if (study != null && study.moveToFirst())
+        {
             participant = (study.getDouble(study.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_EXIT)) == 0
                     && study.getDouble(study.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_JOINED)) > 0); //joined and still enrolled
         }
@@ -521,7 +578,8 @@ public class Aware extends Service {
         return participant;
     }
 
-    public static void debug(Context c, String message) {
+    public static void debug(Context c, String message)
+    {
         //NOTE: only collect this aware_log if in a study for compliance checks
         if (!Aware.isStudy(c)) return;
 
@@ -542,45 +600,55 @@ public class Aware extends Service {
      * @param study_url
      * @return
      */
-    public static Cursor getStudy(Context c, String study_url) {
+    public static Cursor getStudy(Context c, String study_url)
+    {
         return c.getContentResolver().query(Aware_Provider.Aware_Studies.CONTENT_URI, null, Aware_Provider.Aware_Studies.STUDY_URL + " LIKE '" + study_url + "%' AND " + Aware_Provider.Aware_Studies.STUDY_EXIT + "=0", null, Aware_Provider.Aware_Studies.STUDY_TIMESTAMP + " DESC LIMIT 1");
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
+    public int onStartCommand(Intent intent, int flags, int startId)
+    {
         super.onStartCommand(intent, flags, startId);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && PermissionChecker.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PermissionChecker.PERMISSION_GRANTED) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && PermissionChecker.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PermissionChecker.PERMISSION_GRANTED)
+        {
             return START_STICKY;
         }
 
-        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED))
+        {
 
             if (Aware.DEBUG) Log.d(TAG, "AWARE framework is active...");
 
             //this sets the default settings to all plugins too
             SharedPreferences prefs = getSharedPreferences("com.aware.phone", Context.MODE_PRIVATE);
-            if (prefs.getAll().isEmpty() && Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID).length() == 0) {
+            if (prefs.getAll().isEmpty() && Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID).length() == 0)
+            {
                 PreferenceManager.setDefaultValues(getApplicationContext(), "com.aware.phone", Context.MODE_PRIVATE, R.xml.aware_preferences, true);
                 prefs.edit().commit(); //commit changes
-            } else {
+            } else
+            {
                 PreferenceManager.setDefaultValues(getApplicationContext(), "com.aware.phone", Context.MODE_PRIVATE, R.xml.aware_preferences, false);
             }
 
             //this sets the default settings to all plugins too
             Map<String, ?> defaults = prefs.getAll();
-            for (Map.Entry<String, ?> entry : defaults.entrySet()) {
-                if (Aware.getSetting(getApplicationContext(), entry.getKey(), "com.aware.phone").length() == 0) {
+            for (Map.Entry<String, ?> entry : defaults.entrySet())
+            {
+                if (Aware.getSetting(getApplicationContext(), entry.getKey(), "com.aware.phone").length() == 0)
+                {
                     Aware.setSetting(getApplicationContext(), entry.getKey(), entry.getValue(), "com.aware.phone"); //default AWARE settings
                 }
             }
 
-            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID).length() == 0) {
+            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID).length() == 0)
+            {
                 UUID uuid = UUID.randomUUID();
                 Aware.setSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID, uuid.toString(), "com.aware.phone");
             }
 
-            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER).length() == 0) {
+            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER).length() == 0)
+            {
                 Aware.setSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER, "https://api.awareframework.com/index.php");
             }
 
@@ -589,15 +657,19 @@ public class Aware extends Service {
 
             get_device_info();
 
-            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.AWARE_DONATE_USAGE).equals("true")) {
+            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.AWARE_DONATE_USAGE).equals("true"))
+            {
                 new AsyncPing().execute();
             }
 
             //only the client and self-contained apps need to run the keep alive. Plugins are handled by them.
-            if (getApplicationContext().getPackageName().equals("com.aware.phone") || getResources().getBoolean(R.bool.standalone)) {
-                try {
+            if (getApplicationContext().getPackageName().equals("com.aware.phone") || getResources().getBoolean(R.bool.standalone))
+            {
+                try
+                {
                     Scheduler.Schedule watchdog = Scheduler.getSchedule(this, SCHEDULE_KEEP_ALIVE);
-                    if (watchdog == null) {
+                    if (watchdog == null)
+                    {
                         watchdog = new Scheduler.Schedule(SCHEDULE_KEEP_ALIVE);
                         watchdog.setInterval(getApplicationContext().getResources().getInteger(R.integer.keep_alive_interval_min))
                                 .setActionType(Scheduler.ACTION_TYPE_SERVICE)
@@ -606,16 +678,21 @@ public class Aware extends Service {
 
                         Scheduler.saveSchedule(this, watchdog);
                     }
-                } catch (JSONException e) {
+                }
+                catch (JSONException e)
+                {
                     e.printStackTrace();
                 }
             }
 
             //Set compliance checks if on a study
-            if ((getPackageName().equals("com.aware.phone") || getResources().getBoolean(R.bool.standalone)) && isStudy(getApplicationContext())) {
-                try {
+            if ((getPackageName().equals("com.aware.phone") || getResources().getBoolean(R.bool.standalone)) && isStudy(getApplicationContext()))
+            {
+                try
+                {
                     Scheduler.Schedule compliance = Scheduler.getSchedule(this, Aware.SCHEDULE_STUDY_COMPLIANCE);
-                    if (compliance == null) {
+                    if (compliance == null)
+                    {
                         compliance = new Scheduler.Schedule(Aware.SCHEDULE_STUDY_COMPLIANCE);
                         compliance.setInterval(getResources().getInteger(R.integer.study_check_interval_min))
                                 .setActionType(Scheduler.ACTION_TYPE_SERVICE)
@@ -624,44 +701,56 @@ public class Aware extends Service {
 
                         Scheduler.saveSchedule(this, compliance);
                     }
-                } catch (JSONException e) {
+                }
+                catch (JSONException e)
+                {
                     e.printStackTrace();
                 }
             }
 
-            if (intent != null && intent.getAction() != null) {
-                if (intent.getAction().equalsIgnoreCase(ACTION_AWARE_STUDY_COMPLIANCE)) {
+            if (intent != null && intent.getAction() != null)
+            {
+                if (intent.getAction().equalsIgnoreCase(ACTION_AWARE_STUDY_COMPLIANCE))
+                {
                     complianceStatus(getApplicationContext());
                     checkBatteryLeft(getApplicationContext(), false);
 
-                    if (studyCheck == null && Aware.isStudy(getApplicationContext())) {
+                    if (studyCheck == null && Aware.isStudy(getApplicationContext()))
+                    {
                         studyCheck = new AsyncStudyCheck();
                         studyCheck.execute();
                     }
                 }
 
-                if (intent.getAction().equalsIgnoreCase(ACTION_AWARE_KEEP_ALIVE)) {
+                if (intent.getAction().equalsIgnoreCase(ACTION_AWARE_KEEP_ALIVE))
+                {
                     startAWARE(getApplicationContext());
                     startPlugins(getApplicationContext());
                 }
 
-            } else {
+            } else
+            {
                 startAWARE(getApplicationContext());
                 startPlugins(getApplicationContext());
             }
 
-            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_WEBSERVICE).equals("true")) {
+            if (Aware.getSetting(getApplicationContext(), Aware_Preferences.STATUS_WEBSERVICE).equals("true"))
+            {
                 int frequency_webservice = Integer.parseInt(Aware.getSetting(getApplicationContext(), Aware_Preferences.FREQUENCY_WEBSERVICE));
-                if (frequency_webservice == 0) {
+                if (frequency_webservice == 0)
+                {
                     if (DEBUG)
                         Log.d(TAG, "Data sync is disabled.");
 
                     Scheduler.removeSchedule(getApplicationContext(), SCHEDULE_SYNC_DATA);
 
-                } else {
-                    try {
+                } else
+                {
+                    try
+                    {
                         Scheduler.Schedule sync = Scheduler.getSchedule(this, SCHEDULE_SYNC_DATA);
-                        if (sync == null || sync.getInterval() != frequency_webservice) { //Set the sync schedule for the first time or if changed
+                        if (sync == null || sync.getInterval() != frequency_webservice)
+                        { //Set the sync schedule for the first time or if changed
                             Scheduler.Schedule schedule = new Scheduler.Schedule(SCHEDULE_SYNC_DATA)
                                     .setActionType(Scheduler.ACTION_TYPE_BROADCAST)
                                     .setActionIntentAction(Aware.ACTION_AWARE_SYNC_DATA)
@@ -670,17 +759,21 @@ public class Aware extends Service {
                             Scheduler.saveSchedule(getApplicationContext(), schedule);
                             Aware.startScheduler(this);
 
-                            if (DEBUG) {
+                            if (DEBUG)
+                            {
                                 Log.d(TAG, "Data sync every " + schedule.getInterval() + " minute(s)");
                             }
                         }
-                    } catch (JSONException e) {
+                    }
+                    catch (JSONException e)
+                    {
                         e.printStackTrace();
                     }
                 }
             }
 
-        } else { //storage is not available, stop plugins and sensors
+        } else
+        { //storage is not available, stop plugins and sensors
             stopAWARE(getApplicationContext());
             stopPlugins(getApplicationContext());
         }
@@ -688,20 +781,26 @@ public class Aware extends Service {
         return START_STICKY;
     }
 
-    public static void checkBatteryLeft(Context context, boolean dismiss) {
+    public static void checkBatteryLeft(Context context, boolean dismiss)
+    {
 
-        if (Aware.getSetting(context, Aware_Preferences.REMIND_TO_CHARGE).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.REMIND_TO_CHARGE).equals("true"))
+        {
 
             final int CHARGE_REMINDER = 5555;
             NotificationManager notManager = (NotificationManager) context.getApplicationContext().getSystemService(NOTIFICATION_SERVICE);
 
-            if (dismiss) {
+            if (dismiss)
+            {
                 notManager.cancel(CHARGE_REMINDER);
-            } else {
+            } else
+            {
                 Intent batt = context.getApplicationContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-                if (batt != null && batt.getExtras() != null) {
+                if (batt != null && batt.getExtras() != null)
+                {
                     Bundle extras = batt.getExtras();
-                    if (extras.getInt(BatteryManager.EXTRA_LEVEL) <= 15 && extras.getInt(BatteryManager.EXTRA_STATUS) != BatteryManager.BATTERY_STATUS_CHARGING) {
+                    if (extras.getInt(BatteryManager.EXTRA_LEVEL) <= 15 && extras.getInt(BatteryManager.EXTRA_STATUS) != BatteryManager.BATTERY_STATUS_CHARGING)
+                    {
                         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context.getApplicationContext());
                         mBuilder.setSmallIcon(R.drawable.ic_stat_aware_recharge);
                         mBuilder.setContentTitle(context.getApplicationContext().getResources().getString(R.string.app_name));
@@ -726,21 +825,26 @@ public class Aware extends Service {
      * @param context
      * @param package_name
      */
-    public synchronized static void stopPlugin(final Context context, final String package_name) {
+    public synchronized static void stopPlugin(final Context context, final String package_name)
+    {
         PackageInfo packageInfo = PluginsManager.isInstalled(context, package_name);
-        if (packageInfo != null) {
+        if (packageInfo != null)
+        {
 
             PluginsManager.disablePlugin(context, package_name);
 
-            if (context.getPackageName().equals("com.aware.phone") || context.getResources().getBoolean(R.bool.standalone)) {
+            if (context.getPackageName().equals("com.aware.phone") || context.getResources().getBoolean(R.bool.standalone))
+            {
                 context.sendBroadcast(new Intent(Aware.ACTION_AWARE_UPDATE_PLUGINS_INFO)); //sync the Plugins Manager UI for running statuses
             }
 
             ComponentName componentName;
-            if (packageInfo.versionName.equals("bundled")) {
+            if (packageInfo.versionName.equals("bundled"))
+            {
                 componentName = new ComponentName(context.getPackageName(), package_name + ".Plugin");
                 if (Aware.DEBUG) Log.d(Aware.TAG, "Stopping bundled: " + componentName.toString());
-            } else {
+            } else
+            {
                 componentName = new ComponentName(package_name, package_name + ".Plugin");
                 if (Aware.DEBUG) Log.d(Aware.TAG, "Stopping external: " + componentName.toString());
             }
@@ -757,22 +861,27 @@ public class Aware extends Service {
      * @param context
      * @param package_name
      */
-    public synchronized static void startPlugin(final Context context, final String package_name) {
+    public synchronized static void startPlugin(final Context context, final String package_name)
+    {
         PackageInfo packageInfo = PluginsManager.isInstalled(context, package_name);
-        if (packageInfo != null) {
+        if (packageInfo != null)
+        {
 
             PluginsManager.enablePlugin(context, package_name);
 
-            if (context.getPackageName().equals("com.aware.phone") || context.getResources().getBoolean(R.bool.standalone)) {
+            if (context.getPackageName().equals("com.aware.phone") || context.getResources().getBoolean(R.bool.standalone))
+            {
                 context.sendBroadcast(new Intent(Aware.ACTION_AWARE_UPDATE_PLUGINS_INFO)); //sync the Plugins Manager UI for running statuses
             }
 
             ComponentName componentName;
-            if (packageInfo.versionName.equals("bundled")) {
+            if (packageInfo.versionName.equals("bundled"))
+            {
                 componentName = new ComponentName(context.getPackageName(), package_name + ".Plugin");
                 if (Aware.DEBUG)
                     Log.d(Aware.TAG, "Initializing bundled: " + componentName.toString());
-            } else {
+            } else
+            {
                 componentName = new ComponentName(package_name, package_name + ".Plugin");
                 if (Aware.DEBUG)
                     Log.d(Aware.TAG, "Initializing external: " + componentName.toString());
@@ -784,9 +893,11 @@ public class Aware extends Service {
         }
     }
 
-    private static boolean is_running(Context context, String package_name) {
+    private static boolean is_running(Context context, String package_name)
+    {
         ActivityManager manager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE))
+        {
             if (package_name.equals(service.service.getPackageName()))
                 return true;
         }
@@ -800,7 +911,8 @@ public class Aware extends Service {
      * @param package_name
      * @param is_update
      */
-    public static void downloadPlugin(Context context, String package_name, String study_custom_url, boolean is_update) {
+    public static void downloadPlugin(Context context, String package_name, String study_custom_url, boolean is_update)
+    {
         Intent pluginIntent = new Intent(context, DownloadPluginService.class);
         pluginIntent.putExtra("package_name", package_name);
         pluginIntent.putExtra("is_update", is_update);
@@ -816,15 +928,18 @@ public class Aware extends Service {
      * @param package_name: plugin's package name
      * @return View for reuse
      */
-    public static View getContextCard(final Context context, final String package_name) {
+    public static View getContextCard(final Context context, final String package_name)
+    {
 
         boolean is_bundled = false;
         PackageInfo pkg = PluginsManager.isInstalled(context, package_name);
-        if (pkg != null && pkg.versionName.equals("bundled")) {
+        if (pkg != null && pkg.versionName.equals("bundled"))
+        {
             is_bundled = true;
         }
 
-        try {
+        try
+        {
             String contextCardClass = ((is_bundled) ? context.getPackageName() + "/" + package_name : package_name) + ".ContextCard";
             Context reflectedContext = context.createPackageContext(((is_bundled) ? context.getPackageName() : package_name), Context.CONTEXT_INCLUDE_CODE + Context.CONTEXT_IGNORE_SECURITY);
             Class<?> reflectedContextCard = reflectedContext.getClassLoader().loadClass(contextCardClass);
@@ -833,7 +948,8 @@ public class Aware extends Service {
             getContextCard.setAccessible(true);
 
             View ui = (View) getContextCard.invoke(contextCard, reflectedContext);
-            if (ui != null) {
+            if (ui != null)
+            {
                 ui.setBackgroundColor(Color.WHITE);
                 ui.setPadding(0, 0, 0, 10);
 
@@ -858,15 +974,19 @@ public class Aware extends Service {
                 info.addView(plugin_header);
 
                 //Check if plugin has settings. Add button if it does.
-                if (isClassAvailable(context, package_name, "Settings")) {
+                if (isClassAvailable(context, package_name, "Settings"))
+                {
                     ImageView infoSettings = new ImageView(context);
                     infoSettings.setBackgroundResource(R.drawable.ic_action_plugin_settings);
-                    infoSettings.setOnClickListener(new View.OnClickListener() {
+                    infoSettings.setOnClickListener(new View.OnClickListener()
+                    {
                         @Override
-                        public void onClick(View v) {
+                        public void onClick(View v)
+                        {
                             boolean is_bundled = false;
                             PackageInfo pkg = PluginsManager.isInstalled(context, package_name);
-                            if (pkg != null && pkg.versionName.equals("bundled")) {
+                            if (pkg != null && pkg.versionName.equals("bundled"))
+                            {
                                 is_bundled = true;
                             }
 
@@ -891,10 +1011,13 @@ public class Aware extends Service {
                 card.addView(ui);
 
                 return card;
-            } else {
+            } else
+            {
                 return new View(context);
             }
-        } catch (InstantiationException | NoSuchMethodException | NameNotFoundException | IllegalAccessException | ClassNotFoundException | InvocationTargetException e) {
+        }
+        catch (InstantiationException | NoSuchMethodException | NameNotFoundException | IllegalAccessException | ClassNotFoundException | InvocationTargetException e)
+        {
             return new View(context);
         }
     }
@@ -906,24 +1029,34 @@ public class Aware extends Service {
      * @param class_name
      * @return true if exists, false otherwise
      */
-    public static boolean isClassAvailable(Context context, String package_name, String class_name) {
-        if (context.getResources().getBoolean(R.bool.standalone)) {
-            try {
+    public static boolean isClassAvailable(Context context, String package_name, String class_name)
+    {
+        if (context.getResources().getBoolean(R.bool.standalone))
+        {
+            try
+            {
                 Class.forName(package_name + "." + class_name);
                 return true;
-            } catch (ClassNotFoundException e) {
+            }
+            catch (ClassNotFoundException e)
+            {
                 return false;
             }
-        } else {
-            try {
+        } else
+        {
+            try
+            {
                 Context package_context = context.createPackageContext(package_name, Context.CONTEXT_IGNORE_SECURITY + Context.CONTEXT_INCLUDE_CODE);
                 DexFile df = new DexFile(package_context.getPackageCodePath());
-                for (Enumeration<String> iter = df.entries(); iter.hasMoreElements(); ) {
+                for (Enumeration<String> iter = df.entries(); iter.hasMoreElements(); )
+                {
                     String className = iter.nextElement();
                     if (className.contains(class_name)) return true;
                 }
                 return false;
-            } catch (IOException | NameNotFoundException e) {
+            }
+            catch (IOException | NameNotFoundException e)
+            {
                 return false;
             }
         }
@@ -935,7 +1068,8 @@ public class Aware extends Service {
      * @param key
      * @return value
      */
-    public static String getSetting(Context context, String key) {
+    public static String getSetting(Context context, String key)
+    {
 
         boolean is_global;
 
@@ -954,7 +1088,8 @@ public class Aware extends Service {
         global_settings.add(Aware_Preferences.STATUS_APPLICATIONS);
         global_settings.add(Applications.STATUS_AWARE_ACCESSIBILITY);
 
-        if (context.getResources().getBoolean(R.bool.standalone)) {
+        if (context.getResources().getBoolean(R.bool.standalone))
+        {
             global_settings.add(Aware_Preferences.STATUS_MQTT);
             global_settings.add(Aware_Preferences.MQTT_USERNAME);
             global_settings.add(Aware_Preferences.MQTT_PASSWORD);
@@ -973,7 +1108,8 @@ public class Aware extends Service {
         Cursor qry = context.getContentResolver().query(Aware_Settings.CONTENT_URI, null,
                 Aware_Settings.SETTING_KEY + " LIKE '" + key + "' AND " + Aware_Settings.SETTING_PACKAGE_NAME + " LIKE " + ((is_global) ? "'com.aware.phone'" : "'" + context.getPackageName() + "'"),
                 null, null);
-        if (qry != null && qry.moveToFirst()) {
+        if (qry != null && qry.moveToFirst())
+        {
             value = qry.getString(qry.getColumnIndex(Aware_Settings.SETTING_VALUE));
         }
         if (qry != null && !qry.isClosed()) qry.close();
@@ -988,7 +1124,8 @@ public class Aware extends Service {
      * @param package_name
      * @return value
      */
-    public static String getSetting(Context context, String key, String package_name) {
+    public static String getSetting(Context context, String key, String package_name)
+    {
         if (context.getResources().getBoolean(R.bool.standalone))
             package_name = context.getPackageName(); //use the package name from the context
 
@@ -996,7 +1133,8 @@ public class Aware extends Service {
         Cursor qry = context.getContentResolver().query(Aware_Settings.CONTENT_URI, null,
                 Aware_Settings.SETTING_KEY + " LIKE '" + key + "' AND " + Aware_Settings.SETTING_PACKAGE_NAME + " LIKE '" + package_name + "'",
                 null, null);
-        if (qry != null && qry.moveToFirst()) {
+        if (qry != null && qry.moveToFirst())
+        {
             value = qry.getString(qry.getColumnIndex(Aware_Settings.SETTING_VALUE));
         }
         if (qry != null && !qry.isClosed()) qry.close();
@@ -1009,7 +1147,8 @@ public class Aware extends Service {
      * @param key
      * @param value
      */
-    public static void setSetting(Context context, String key, Object value) {
+    public static void setSetting(Context context, String key, Object value)
+    {
         boolean is_global;
 
         ArrayList<String> global_settings = new ArrayList<String>();
@@ -1028,7 +1167,8 @@ public class Aware extends Service {
         global_settings.add(Applications.STATUS_AWARE_ACCESSIBILITY);
 
         //allow standalone apps to react to MQTT
-        if (context.getResources().getBoolean(R.bool.standalone)) {
+        if (context.getResources().getBoolean(R.bool.standalone))
+        {
             global_settings.add(Aware_Preferences.STATUS_MQTT);
             global_settings.add(Aware_Preferences.MQTT_USERNAME);
             global_settings.add(Aware_Preferences.MQTT_PASSWORD);
@@ -1044,12 +1184,14 @@ public class Aware extends Service {
             is_global = false;
 
         //We already have a Device ID, do nothing!
-        if (key.equals(Aware_Preferences.DEVICE_ID) && Aware.getSetting(context, Aware_Preferences.DEVICE_ID).length() > 0) {
+        if (key.equals(Aware_Preferences.DEVICE_ID) && Aware.getSetting(context, Aware_Preferences.DEVICE_ID).length() > 0)
+        {
             Log.d(Aware.TAG, "AWARE UUID: " + Aware.getSetting(context, Aware_Preferences.DEVICE_ID) + " in " + context.getPackageName());
             return;
         }
 
-        if (key.equals(Aware_Preferences.DEVICE_LABEL) && ((String) value).length() > 0) {
+        if (key.equals(Aware_Preferences.DEVICE_LABEL) && ((String) value).length() > 0)
+        {
             ContentValues newLabel = new ContentValues();
             newLabel.put(Aware_Provider.Aware_Device.LABEL, (String) value);
             context.getContentResolver().update(Aware_Provider.Aware_Device.CONTENT_URI, newLabel, Aware_Provider.Aware_Device.DEVICE_ID + " LIKE '" + Aware.getSetting(context, Aware_Preferences.DEVICE_ID) + "'", null);
@@ -1058,33 +1200,48 @@ public class Aware extends Service {
         ContentValues setting = new ContentValues();
         setting.put(Aware_Settings.SETTING_KEY, key);
         setting.put(Aware_Settings.SETTING_VALUE, value.toString());
-        if (is_global) {
+        if (is_global)
+        {
             setting.put(Aware_Settings.SETTING_PACKAGE_NAME, "com.aware.phone");
-        } else {
+        } else
+        {
             setting.put(Aware_Settings.SETTING_PACKAGE_NAME, context.getPackageName());
         }
 
         Cursor qry = context.getContentResolver().query(Aware_Settings.CONTENT_URI, null, Aware_Settings.SETTING_KEY + " LIKE '" + key + "' AND " + Aware_Settings.SETTING_PACKAGE_NAME + " LIKE " + ((is_global) ? "'com.aware.phone'" : "'" + context.getPackageName() + "'"), null, null);
         //update
-        if (qry != null && qry.moveToFirst()) {
-            try {
-                if (!qry.getString(qry.getColumnIndex(Aware_Settings.SETTING_VALUE)).equals(value.toString())) {
+        if (qry != null && qry.moveToFirst())
+        {
+            try
+            {
+                if (!qry.getString(qry.getColumnIndex(Aware_Settings.SETTING_VALUE)).equals(value.toString()))
+                {
                     context.getContentResolver().update(Aware_Settings.CONTENT_URI, setting, Aware_Settings.SETTING_ID + "=" + qry.getInt(qry.getColumnIndex(Aware_Settings.SETTING_ID)), null);
                     if (Aware.DEBUG) Log.d(Aware.TAG, "Updated: " + key + "=" + value);
                 }
-            } catch (SQLiteException e) {
+            }
+            catch (SQLiteException e)
+            {
                 if (Aware.DEBUG) Log.d(TAG, e.getMessage());
-            } catch (SQLException e) {
+            }
+            catch (SQLException e)
+            {
                 if (Aware.DEBUG) Log.d(TAG, e.getMessage());
             }
             //insert
-        } else {
-            try {
+        } else
+        {
+            try
+            {
                 context.getContentResolver().insert(Aware_Settings.CONTENT_URI, setting);
                 if (Aware.DEBUG) Log.d(Aware.TAG, "Added: " + key + "=" + value);
-            } catch (SQLiteException e) {
+            }
+            catch (SQLiteException e)
+            {
                 if (Aware.DEBUG) Log.d(TAG, e.getMessage());
-            } catch (SQLException e) {
+            }
+            catch (SQLException e)
+            {
                 if (Aware.DEBUG) Log.d(TAG, e.getMessage());
             }
         }
@@ -1098,17 +1255,20 @@ public class Aware extends Service {
      * @param value
      * @param package_name
      */
-    public static void setSetting(Context context, String key, Object value, String package_name) {
+    public static void setSetting(Context context, String key, Object value, String package_name)
+    {
         if (context.getResources().getBoolean(R.bool.standalone)) //use the package name from the context
             package_name = context.getPackageName();
 
         //We already have a device ID, bail-out!
-        if (key.equals(Aware_Preferences.DEVICE_ID) && Aware.getSetting(context, Aware_Preferences.DEVICE_ID).length() > 0) {
+        if (key.equals(Aware_Preferences.DEVICE_ID) && Aware.getSetting(context, Aware_Preferences.DEVICE_ID).length() > 0)
+        {
             Log.d(Aware.TAG, "AWARE UUID: " + Aware.getSetting(context, Aware_Preferences.DEVICE_ID) + " in " + package_name);
             return;
         }
 
-        if (key.equals(Aware_Preferences.DEVICE_LABEL) && ((String) value).length() > 0) {
+        if (key.equals(Aware_Preferences.DEVICE_LABEL) && ((String) value).length() > 0)
+        {
             ContentValues newLabel = new ContentValues();
             newLabel.put(Aware_Provider.Aware_Device.LABEL, (String) value);
             context.getContentResolver().update(Aware_Provider.Aware_Device.CONTENT_URI, newLabel, Aware_Provider.Aware_Device.DEVICE_ID + " LIKE '" + Aware.getSetting(context, Aware_Preferences.DEVICE_ID) + "'", null);
@@ -1121,27 +1281,40 @@ public class Aware extends Service {
 
         Cursor qry = context.getContentResolver().query(Aware_Settings.CONTENT_URI, null, Aware_Settings.SETTING_KEY + " LIKE '" + key + "' AND " + Aware_Settings.SETTING_PACKAGE_NAME + " LIKE '" + package_name + "'", null, null);
         //update
-        if (qry != null && qry.moveToFirst()) {
-            try {
-                if (!qry.getString(qry.getColumnIndex(Aware_Settings.SETTING_VALUE)).equals(value.toString())) {
+        if (qry != null && qry.moveToFirst())
+        {
+            try
+            {
+                if (!qry.getString(qry.getColumnIndex(Aware_Settings.SETTING_VALUE)).equals(value.toString()))
+                {
                     context.getContentResolver().update(Aware_Settings.CONTENT_URI, setting, Aware_Settings.SETTING_ID + "=" + qry.getInt(qry.getColumnIndex(Aware_Settings.SETTING_ID)), null);
                     if (Aware.DEBUG)
                         Log.d(Aware.TAG, "Updated: " + key + "=" + value + " in " + package_name);
                 }
-            } catch (SQLiteException e) {
+            }
+            catch (SQLiteException e)
+            {
                 if (Aware.DEBUG) Log.d(TAG, e.getMessage());
-            } catch (SQLException e) {
+            }
+            catch (SQLException e)
+            {
                 if (Aware.DEBUG) Log.d(TAG, e.getMessage());
             }
             //insert
-        } else {
-            try {
+        } else
+        {
+            try
+            {
                 context.getContentResolver().insert(Aware_Settings.CONTENT_URI, setting);
                 if (Aware.DEBUG)
                     Log.d(Aware.TAG, "Added: " + key + "=" + value + " in " + package_name);
-            } catch (SQLiteException e) {
+            }
+            catch (SQLiteException e)
+            {
                 if (Aware.DEBUG) Log.d(TAG, e.getMessage());
-            } catch (SQLException e) {
+            }
+            catch (SQLException e)
+            {
                 if (Aware.DEBUG) Log.d(TAG, e.getMessage());
             }
         }
@@ -1154,7 +1327,8 @@ public class Aware extends Service {
      * @param context
      * @param study_url
      */
-    public static void joinStudy(Context context, String study_url) {
+    public static void joinStudy(Context context, String study_url)
+    {
         Intent join = new Intent(context, JoinStudy.class);
         join.putExtra(StudyUtils.EXTRA_JOIN_STUDY, study_url);
         context.startService(join);
@@ -1168,26 +1342,34 @@ public class Aware extends Service {
      * @param c
      * @param serverConfig
      */
-    protected static void tweakSettings(Context c, JSONArray serverConfig) {
+    protected static void tweakSettings(Context c, JSONArray serverConfig)
+    {
 
         boolean config_changed = false;
 
         JSONArray plugins = new JSONArray();
         JSONArray sensors = new JSONArray();
         JSONArray schedulers = new JSONArray();
-        for (int i = 0; i < serverConfig.length(); i++) {
-            try {
+        for (int i = 0; i < serverConfig.length(); i++)
+        {
+            try
+            {
                 JSONObject element = serverConfig.getJSONObject(i);
-                if (element.has("plugins")) {
+                if (element.has("plugins"))
+                {
                     plugins = element.getJSONArray("plugins");
                 }
-                if (element.has("sensors")) {
+                if (element.has("sensors"))
+                {
                     sensors = element.getJSONArray("sensors");
                 }
-                if (element.has("schedulers")) {
+                if (element.has("schedulers"))
+                {
                     schedulers = element.getJSONArray("schedulers");
                 }
-            } catch (JSONException e) {
+            }
+            catch (JSONException e)
+            {
                 e.printStackTrace();
             }
         }
@@ -1195,11 +1377,15 @@ public class Aware extends Service {
         JSONArray localConfig = new JSONArray();
         Cursor study = getStudy(c, Aware.getSetting(c, Aware_Preferences.WEBSERVICE_SERVER));
         int study_id = 0;
-        if (study != null && study.moveToFirst()) {
-            try {
+        if (study != null && study.moveToFirst())
+        {
+            try
+            {
                 localConfig = new JSONArray(study.getString(study.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)));
                 study_id = study.getInt(study.getColumnIndex(Aware_Provider.Aware_Studies._ID));
-            } catch (JSONException e) {
+            }
+            catch (JSONException e)
+            {
                 e.printStackTrace();
             }
         }
@@ -1208,9 +1394,12 @@ public class Aware extends Service {
         JSONArray localSensors = new JSONArray();
         JSONArray localPlugins = new JSONArray();
         JSONArray localSchedulers = new JSONArray();
-        if (localConfig.length() > 0) {
-            for (int i = 0; i < localConfig.length(); i++) {
-                try {
+        if (localConfig.length() > 0)
+        {
+            for (int i = 0; i < localConfig.length(); i++)
+            {
+                try
+                {
                     JSONObject element = localConfig.getJSONObject(i);
                     if (element.has("sensors"))
                         localSensors = element.getJSONArray("sensors");
@@ -1218,51 +1407,69 @@ public class Aware extends Service {
                         localPlugins = element.getJSONArray("plugins");
                     if (element.has("schedulers"))
                         localSchedulers = element.getJSONArray("schedulers");
-                } catch (JSONException e) {
+                }
+                catch (JSONException e)
+                {
                     e.printStackTrace();
                 }
             }
 
-            try {
+            try
+            {
                 ArrayList<JSONArray> sensorSync = sensorDiff(c, sensors, localSensors); //check sensors first
-                if (sensorSync.get(0).length() > 0 || sensorSync.get(1).length() > 0) {
+                if (sensorSync.get(0).length() > 0 || sensorSync.get(1).length() > 0)
+                {
                     JSONArray enabled = sensorSync.get(0);
-                    for (int i = 0; i < enabled.length(); i++) {
-                        try {
+                    for (int i = 0; i < enabled.length(); i++)
+                    {
+                        try
+                        {
                             JSONObject sensor_config = enabled.getJSONObject(i);
-                            if (sensor_config.getString("setting").contains("status")) {
+                            if (sensor_config.getString("setting").contains("status"))
+                            {
                                 Aware.setSetting(c, sensor_config.getString("setting"), true, "com.aware.phone");
                             } else
                                 Aware.setSetting(c, sensor_config.getString("setting"), sensor_config.getString("value"), "com.aware.phone");
-                        } catch (JSONException e) {
+                        }
+                        catch (JSONException e)
+                        {
                             e.printStackTrace();
                         }
                     }
 
                     JSONArray disabled = sensorSync.get(1);
-                    for (int i = 0; i < disabled.length(); i++) {
-                        try {
+                    for (int i = 0; i < disabled.length(); i++)
+                    {
+                        try
+                        {
                             JSONObject sensor_config = disabled.getJSONObject(i);
-                            if (sensor_config.getString("setting").contains("status")) {
+                            if (sensor_config.getString("setting").contains("status"))
+                            {
                                 Aware.setSetting(c, sensor_config.getString("setting"), false, "com.aware.phone");
                             } else
                                 Aware.setSetting(c, sensor_config.getString("setting"), sensor_config.getString("value"), "com.aware.phone");
-                        } catch (JSONException e) {
+                        }
+                        catch (JSONException e)
+                        {
                             e.printStackTrace();
                         }
                     }
 
                     if (enabled.length() > 0 || disabled.length() > 0) config_changed = true;
 
-                    if (config_changed) {
+                    if (config_changed)
+                    {
                         //Update local study configuration
-                        for (int i = 0; i < enabled.length(); i++) {
+                        for (int i = 0; i < enabled.length(); i++)
+                        {
                             localConfig.getJSONObject(0).getJSONArray("sensors").put(enabled.getJSONObject(i));
                         }
 
-                        for (int i = 0; i < disabled.length(); i++) {
+                        for (int i = 0; i < disabled.length(); i++)
+                        {
                             JSONObject removed = disabled.getJSONObject(i);
-                            for (int j = 0; j < localConfig.getJSONObject(0).getJSONArray("sensors").length(); j++) {
+                            for (int j = 0; j < localConfig.getJSONObject(0).getJSONArray("sensors").length(); j++)
+                            {
                                 JSONObject local = localConfig.getJSONObject(0).getJSONArray("sensors").getJSONObject(j);
                                 if (removed.getString("setting").equalsIgnoreCase(local.getString("setting")))
                                     localConfig.getJSONObject(0).getJSONArray("sensors").remove(j);
@@ -1270,71 +1477,94 @@ public class Aware extends Service {
                         }
                     }
                 }
-            } catch (JSONException e) {
+            }
+            catch (JSONException e)
+            {
                 e.printStackTrace();
             }
 
-            try {
+            try
+            {
                 ArrayList<JSONArray> pluginSync = pluginDiff(plugins, localPlugins);
-                if (pluginSync.get(0).length() > 0 || pluginSync.get(1).length() > 0) {
+                if (pluginSync.get(0).length() > 0 || pluginSync.get(1).length() > 0)
+                {
                     JSONArray enabled = pluginSync.get(0);
-                    for (int i = 0; i < enabled.length(); i++) {
-                        try {
+                    for (int i = 0; i < enabled.length(); i++)
+                    {
+                        try
+                        {
                             JSONObject plugin_config = enabled.getJSONObject(i);
                             String package_name = plugin_config.getString("plugin");
                             JSONArray plugin_settings = plugin_config.getJSONArray("settings");
-                            for (int j = 0; j < plugin_settings.length(); j++) {
+                            for (int j = 0; j < plugin_settings.length(); j++)
+                            {
                                 JSONObject plugin_set = plugin_settings.getJSONObject(j);
-                                if (plugin_set.getString("setting").contains("status")) {
+                                if (plugin_set.getString("setting").contains("status"))
+                                {
                                     Aware.setSetting(c, plugin_set.getString("setting"), true, package_name);
                                 } else
                                     Aware.setSetting(c, plugin_set.getString("setting"), plugin_set.getString("value"), package_name);
                             }
-                        } catch (JSONException e) {
+                        }
+                        catch (JSONException e)
+                        {
                             e.printStackTrace();
                         }
                     }
 
                     JSONArray disabled = pluginSync.get(1);
-                    for (int i = 0; i < disabled.length(); i++) {
-                        try {
+                    for (int i = 0; i < disabled.length(); i++)
+                    {
+                        try
+                        {
                             JSONObject plugin_config = disabled.getJSONObject(i);
                             String package_name = plugin_config.getString("plugin");
                             JSONArray plugin_settings = plugin_config.getJSONArray("settings");
-                            for (int j = 0; j < plugin_settings.length(); j++) {
+                            for (int j = 0; j < plugin_settings.length(); j++)
+                            {
                                 JSONObject plugin_set = plugin_settings.getJSONObject(j);
-                                if (plugin_set.getString("setting").contains("status")) {
+                                if (plugin_set.getString("setting").contains("status"))
+                                {
                                     Aware.setSetting(c, plugin_set.getString("setting"), false, package_name);
                                 } else
                                     Aware.setSetting(c, plugin_set.getString("setting"), plugin_set.getString("value"), package_name);
                             }
-                        } catch (JSONException e) {
+                        }
+                        catch (JSONException e)
+                        {
                             e.printStackTrace();
                         }
                     }
 
                     if (enabled.length() > 0 || disabled.length() > 0) config_changed = true;
 
-                    if (config_changed) {
-                        if (enabled.length() > 0 && !localConfig.getJSONObject(0).has("plugins")) {
+                    if (config_changed)
+                    {
+                        if (enabled.length() > 0 && !localConfig.getJSONObject(0).has("plugins"))
+                        {
                             localConfig.getJSONObject(0).put("plugins", new JSONArray());
                         }
 
                         //Update local study configuration
-                        for (int i = 0; i < enabled.length(); i++) {
+                        for (int i = 0; i < enabled.length(); i++)
+                        {
                             JSONObject plugin = enabled.getJSONObject(i);
                             localConfig.getJSONObject(0).getJSONArray("plugins").put(plugin);
-                            if (PluginsManager.isInstalled(c, enabled.getJSONObject(i).getString("plugin")) != null) {
+                            if (PluginsManager.isInstalled(c, enabled.getJSONObject(i).getString("plugin")) != null)
+                            {
                                 Aware.startPlugin(c, enabled.getJSONObject(i).getString("plugin"));
                             } else
                                 Aware.downloadPlugin(c, enabled.getJSONObject(i).getString("plugin"), null, false);
                         }
 
-                        for (int i = 0; i < disabled.length(); i++) {
+                        for (int i = 0; i < disabled.length(); i++)
+                        {
                             JSONObject removed = disabled.getJSONObject(i);
-                            for (int j = 0; j < localConfig.getJSONObject(0).getJSONArray("plugins").length(); j++) {
+                            for (int j = 0; j < localConfig.getJSONObject(0).getJSONArray("plugins").length(); j++)
+                            {
                                 JSONObject local = localConfig.getJSONObject(0).getJSONArray("plugins").getJSONObject(j);
-                                if (removed.getString("plugin").equalsIgnoreCase(local.getString("plugin"))) {
+                                if (removed.getString("plugin").equalsIgnoreCase(local.getString("plugin")))
+                                {
                                     localConfig.getJSONObject(0).getJSONArray("plugins").remove(j);
                                     Aware.stopPlugin(c, removed.getString("plugin"));
                                 }
@@ -1342,12 +1572,15 @@ public class Aware extends Service {
                         }
                     }
                 }
-            } catch (JSONException e) {
+            }
+            catch (JSONException e)
+            {
                 e.printStackTrace();
             }
         }
 
-        if (config_changed) {
+        if (config_changed)
+        {
             ContentValues newCfg = new ContentValues();
             newCfg.put(Aware_Provider.Aware_Studies.STUDY_CONFIG, localConfig.toString());
             c.getContentResolver().update(Aware_Provider.Aware_Studies.CONTENT_URI, newCfg, Aware_Provider.Aware_Studies._ID + "=" + study_id, null);
@@ -1369,17 +1602,21 @@ public class Aware extends Service {
      * @return
      * @throws JSONException
      */
-    private static ArrayList<JSONArray> pluginDiff(JSONArray server, JSONArray local) throws JSONException {
+    private static ArrayList<JSONArray> pluginDiff(JSONArray server, JSONArray local) throws JSONException
+    {
         JSONArray to_enable = new JSONArray();
         JSONArray to_disable = new JSONArray();
 
         //enable new plugins from the server
-        for (int i = 0; i < server.length(); i++) {
+        for (int i = 0; i < server.length(); i++)
+        {
             JSONObject server_plugin = server.getJSONObject(i);
             boolean is_present = false;
-            for (int j = 0; j < local.length(); j++) {
+            for (int j = 0; j < local.length(); j++)
+            {
                 JSONObject local_plugin = local.getJSONObject(j);
-                if (local_plugin.getString("plugin").equalsIgnoreCase(server_plugin.getString("plugin"))) {
+                if (local_plugin.getString("plugin").equalsIgnoreCase(server_plugin.getString("plugin")))
+                {
                     is_present = true;
                     break;
                 }
@@ -1388,13 +1625,16 @@ public class Aware extends Service {
         }
 
         //disable local sensors that are no longer in the server
-        for (int j = 0; j < local.length(); j++) {
+        for (int j = 0; j < local.length(); j++)
+        {
             JSONObject local_plugin = local.getJSONObject(j);
 
             boolean remove = true;
-            for (int i = 0; i < server.length(); i++) {
+            for (int i = 0; i < server.length(); i++)
+            {
                 JSONObject server_plugin = server.getJSONObject(i);
-                if (local_plugin.getString("plugin").equalsIgnoreCase(server_plugin.getString("plugin"))) {
+                if (local_plugin.getString("plugin").equalsIgnoreCase(server_plugin.getString("plugin")))
+                {
                     remove = false;
                     break;
                 }
@@ -1417,12 +1657,14 @@ public class Aware extends Service {
      * @return
      * @throws JSONException
      */
-    private static ArrayList<JSONArray> sensorDiff(Context context, JSONArray server, JSONArray local) throws JSONException {
+    private static ArrayList<JSONArray> sensorDiff(Context context, JSONArray server, JSONArray local) throws JSONException
+    {
 
         SensorManager manager = (SensorManager) context.getApplicationContext().getSystemService(Context.SENSOR_SERVICE);
         List<Sensor> sensors = manager.getSensorList(Sensor.TYPE_ALL);
         Hashtable<Integer, Boolean> listSensorType = new Hashtable<>();
-        for (int i = 0; i < sensors.size(); i++) {
+        for (int i = 0; i < sensors.size(); i++)
+        {
             listSensorType.put(sensors.get(i).getType(), true);
         }
 
@@ -1459,22 +1701,27 @@ public class Aware extends Service {
         immutable_settings.add("status_webservice");
 
         //enable new sensors from the server
-        for (int i = 0; i < server.length(); i++) {
+        for (int i = 0; i < server.length(); i++)
+        {
             JSONObject server_sensor = server.getJSONObject(i);
 
-            for (String optionalSensor : keys) {
+            for (String optionalSensor : keys)
+            {
                 if (server_sensor.getString("setting").equalsIgnoreCase(optionalSensor) && !listSensorType.containsKey(optionalSensors.get(optionalSensor)))
                     continue;
             }
 
             boolean is_present = false;
-            for (int j = 0; j < local.length(); j++) {
+            for (int j = 0; j < local.length(); j++)
+            {
                 JSONObject local_sensor = local.getJSONObject(j);
-                if (immutable_settings.contains(local_sensor.getString("setting"))) {
+                if (immutable_settings.contains(local_sensor.getString("setting")))
+                {
                     continue; //don't do anything
                 }
 
-                if (local_sensor.getString("setting").equalsIgnoreCase(server_sensor.getString("setting"))) {
+                if (local_sensor.getString("setting").equalsIgnoreCase(server_sensor.getString("setting")))
+                {
                     is_present = true;
                     break;
                 }
@@ -1483,21 +1730,26 @@ public class Aware extends Service {
         }
 
         //disable local sensors that are no longer in the server
-        for (int j = 0; j < local.length(); j++) {
+        for (int j = 0; j < local.length(); j++)
+        {
             JSONObject local_sensor = local.getJSONObject(j);
-            if (immutable_settings.contains(local_sensor.getString("setting"))) {
+            if (immutable_settings.contains(local_sensor.getString("setting")))
+            {
                 continue; //don't do anything
             }
 
-            for (String optionalSensor : keys) {
+            for (String optionalSensor : keys)
+            {
                 if (local_sensor.getString("setting").equalsIgnoreCase(optionalSensor) && !listSensorType.containsKey(optionalSensors.get(optionalSensor)))
                     continue;
             }
 
             boolean remove = true;
-            for (int i = 0; i < server.length(); i++) {
+            for (int i = 0; i < server.length(); i++)
+            {
                 JSONObject server_sensor = server.getJSONObject(i);
-                if (local_sensor.getString("setting").equalsIgnoreCase(server_sensor.getString("setting"))) {
+                if (local_sensor.getString("setting").equalsIgnoreCase(server_sensor.getString("setting")))
+                {
                     remove = false;
                     break;
                 }
@@ -1515,10 +1767,12 @@ public class Aware extends Service {
     /**
      * Used by self-contained apps to join a study
      */
-    public static class JoinStudy extends StudyUtils {
+    public static class JoinStudy extends StudyUtils
+    {
 
         @Override
-        protected void onHandleIntent(Intent intent) {
+        protected void onHandleIntent(Intent intent)
+        {
             String full_url = intent.getStringExtra(EXTRA_JOIN_STUDY);
 
             if (Aware.DEBUG) Log.d(Aware.TAG, "Joining: " + full_url);
@@ -1529,27 +1783,35 @@ public class Aware extends Service {
             String protocol = study_uri.getScheme();
             List<String> path_segments = study_uri.getPathSegments();
 
-            if (path_segments.size() > 0) {
+            if (path_segments.size() > 0)
+            {
                 String study_api_key = path_segments.get(path_segments.size() - 1);
                 String study_id = path_segments.get(path_segments.size() - 2);
 
                 String request;
-                if (protocol.equals("https")) {
+                if (protocol.equals("https"))
+                {
                     SSLManager.handleUrl(getApplicationContext(), full_url, true);
 
-                    try {
+                    try
+                    {
                         request = new Https(SSLManager.getHTTPS(getApplicationContext(), full_url)).dataGET(full_url.substring(0, full_url.indexOf("/index.php")) + "/index.php/webservice/client_get_study_info/" + study_api_key, true);
-                    } catch (FileNotFoundException e) {
+                    }
+                    catch (FileNotFoundException e)
+                    {
                         request = null;
                     }
-                } else {
+                } else
+                {
                     request = new Http().dataGET(full_url.substring(0, full_url.indexOf("/index.php")) + "/index.php/webservice/client_get_study_info/" + study_api_key, true);
                 }
 
-                if (request != null) {
+                if (request != null)
+                {
                     if (request.equals("[]")) return;
 
-                    try {
+                    try
+                    {
                         JSONObject studyInfo = new JSONObject(request);
 
                         if (DEBUG)
@@ -1559,28 +1821,37 @@ public class Aware extends Service {
                         Hashtable<String, String> data = new Hashtable<>();
                         data.put(Aware_Preferences.DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
                         data.put("platform", "android");
-                        try {
+                        try
+                        {
                             PackageInfo package_info = getApplicationContext().getPackageManager().getPackageInfo(getApplicationContext().getPackageName(), 0);
                             data.put("package_name", package_info.packageName);
                             data.put("package_version_code", String.valueOf(package_info.versionCode));
                             data.put("package_version_name", String.valueOf(package_info.versionName));
-                        } catch (PackageManager.NameNotFoundException e) {
+                        }
+                        catch (PackageManager.NameNotFoundException e)
+                        {
                             Log.d(Aware.TAG, "Failed to put package info: " + e);
                             e.printStackTrace();
                         }
 
                         String answer;
-                        if (protocol.equals("https")) {
-                            try {
+                        if (protocol.equals("https"))
+                        {
+                            try
+                            {
                                 answer = new Https(SSLManager.getHTTPS(getApplicationContext(), full_url)).dataPOST(full_url, data, true);
-                            } catch (FileNotFoundException e) {
+                            }
+                            catch (FileNotFoundException e)
+                            {
                                 answer = null;
                             }
-                        } else {
+                        } else
+                        {
                             answer = new Http().dataPOST(full_url, data, true);
                         }
 
-                        if (answer == null) {
+                        if (answer == null)
+                        {
                             Toast.makeText(getApplicationContext(), "Failed to connect to server, try again.", Toast.LENGTH_LONG).show();
                             return;
                         }
@@ -1590,7 +1861,8 @@ public class Aware extends Service {
                         if (DEBUG)
                             Log.d(TAG, "Study config: " + study_config.toString(5));
 
-                        if (study_config.getJSONObject(0).has("message")) {
+                        if (study_config.getJSONObject(0).has("message"))
+                        {
                             Toast.makeText(getApplicationContext(), study_config.getJSONObject(0).getString("message"), Toast.LENGTH_LONG).show();
                             return;
                         }
@@ -1599,7 +1871,8 @@ public class Aware extends Service {
                         if (Aware.DEBUG)
                             Log.d(Aware.TAG, DatabaseUtils.dumpCursorToString(dbStudy));
 
-                        if (dbStudy == null || !dbStudy.moveToFirst()) {
+                        if (dbStudy == null || !dbStudy.moveToFirst())
+                        {
                             ContentValues studyData = new ContentValues();
                             studyData.put(Aware_Provider.Aware_Studies.STUDY_DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
                             studyData.put(Aware_Provider.Aware_Studies.STUDY_TIMESTAMP, System.currentTimeMillis());
@@ -1617,7 +1890,8 @@ public class Aware extends Service {
                             if (Aware.DEBUG)
                                 Log.d(Aware.TAG, "New study data: " + studyData.toString());
 
-                        } else {
+                        } else
+                        {
                             ContentValues studyData = new ContentValues();
                             studyData.put(Aware_Provider.Aware_Studies.STUDY_DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
                             studyData.put(Aware_Provider.Aware_Studies.STUDY_TIMESTAMP, System.currentTimeMillis());
@@ -1633,7 +1907,8 @@ public class Aware extends Service {
 
                             getContentResolver().insert(Aware_Provider.Aware_Studies.CONTENT_URI, studyData);
 
-                            if (Aware.DEBUG) {
+                            if (Aware.DEBUG)
+                            {
                                 Log.d(Aware.TAG, "Rejoined study data: " + studyData.toString());
                             }
                         }
@@ -1645,48 +1920,64 @@ public class Aware extends Service {
                         JSONArray sensors = new JSONArray();
                         JSONArray schedulers = new JSONArray();
 
-                        for (int i = 0; i < study_config.length(); i++) {
-                            try {
+                        for (int i = 0; i < study_config.length(); i++)
+                        {
+                            try
+                            {
                                 JSONObject element = study_config.getJSONObject(i);
-                                if (element.has("plugins")) {
+                                if (element.has("plugins"))
+                                {
                                     plugins = element.getJSONArray("plugins");
                                 }
-                                if (element.has("sensors")) {
+                                if (element.has("sensors"))
+                                {
                                     sensors = element.getJSONArray("sensors");
                                 }
-                                if (element.has("schedulers")) {
+                                if (element.has("schedulers"))
+                                {
                                     schedulers = element.getJSONArray("schedulers");
                                 }
-                            } catch (JSONException e) {
+                            }
+                            catch (JSONException e)
+                            {
                                 e.printStackTrace();
                             }
                         }
 
                         //Set the sensors' settings first
-                        for (int i = 0; i < sensors.length(); i++) {
-                            try {
+                        for (int i = 0; i < sensors.length(); i++)
+                        {
+                            try
+                            {
                                 JSONObject sensor_config = sensors.getJSONObject(i);
                                 Aware.setSetting(getApplicationContext(), sensor_config.getString("setting"), sensor_config.get("value"), "com.aware.phone");
-                            } catch (JSONException e) {
+                            }
+                            catch (JSONException e)
+                            {
                                 e.printStackTrace();
                             }
                         }
 
                         //Set the plugins' settings now
                         ArrayList<String> active_plugins = new ArrayList<>();
-                        for (int i = 0; i < plugins.length(); i++) {
-                            try {
+                        for (int i = 0; i < plugins.length(); i++)
+                        {
+                            try
+                            {
                                 JSONObject plugin_config = plugins.getJSONObject(i);
 
                                 String package_name = plugin_config.getString("plugin");
                                 active_plugins.add(package_name);
 
                                 JSONArray plugin_settings = plugin_config.getJSONArray("settings");
-                                for (int j = 0; j < plugin_settings.length(); j++) {
+                                for (int j = 0; j < plugin_settings.length(); j++)
+                                {
                                     JSONObject plugin_setting = plugin_settings.getJSONObject(j);
                                     Aware.setSetting(getApplicationContext(), plugin_setting.getString("setting"), plugin_setting.get("value"), package_name);
                                 }
-                            } catch (JSONException e) {
+                            }
+                            catch (JSONException e)
+                            {
                                 e.printStackTrace();
                             }
                         }
@@ -1696,7 +1987,8 @@ public class Aware extends Service {
                             Scheduler.setSchedules(getApplicationContext(), schedulers);
 
                         //Start plugins
-                        for (String p : active_plugins) {
+                        for (String p : active_plugins)
+                        {
                             Aware.startPlugin(getApplicationContext(), p);
                         }
 
@@ -1704,7 +1996,9 @@ public class Aware extends Service {
                         Intent aware = new Intent(getApplicationContext(), Aware.class);
                         startService(aware);
 
-                    } catch (JSONException e) {
+                    }
+                    catch (JSONException e)
+                    {
                         e.printStackTrace();
                     }
                 }
@@ -1713,20 +2007,25 @@ public class Aware extends Service {
     }
 
     @Override
-    public void onDestroy() {
+    public void onDestroy()
+    {
         super.onDestroy();
 
-        try {
+        try
+        {
             //unregisterReceiver(aware_BR);
             unregisterReceiver(storage_BR);
             unregisterReceiver(awareBoot);
             unregisterReceiver(foregroundMgr);
-        } catch (IllegalArgumentException e) {
+        }
+        catch (IllegalArgumentException e)
+        {
             //There is no API to check if a broadcast receiver already is registered. Since Aware.java is shared accross plugins, the receiver is only registered on the client, not the plugins.
         }
     }
 
-    public static void reset(Context context) {
+    public static void reset(Context context)
+    {
         String device_id = Aware.getSetting(context, Aware_Preferences.DEVICE_ID);
         String device_label = Aware.getSetting(context, Aware_Preferences.DEVICE_LABEL);
 
@@ -1742,7 +2041,8 @@ public class Aware extends Service {
         prefs.edit().commit();
 
         Map<String, ?> defaults = prefs.getAll();
-        for (Map.Entry<String, ?> entry : defaults.entrySet()) {
+        for (Map.Entry<String, ?> entry : defaults.entrySet())
+        {
             Aware.setSetting(context, entry.getKey(), entry.getValue(), "com.aware.phone");
         }
 
@@ -1757,16 +2057,21 @@ public class Aware extends Service {
         //Turn off all active plugins
         ArrayList<String> active_plugins = new ArrayList<>();
         Cursor enabled_plugins = context.getContentResolver().query(Aware_Plugins.CONTENT_URI, null, Aware_Plugins.PLUGIN_STATUS + "=" + Aware_Plugin.STATUS_PLUGIN_ON, null, null);
-        if (enabled_plugins != null && enabled_plugins.moveToFirst()) {
-            do {
+        if (enabled_plugins != null && enabled_plugins.moveToFirst())
+        {
+            do
+            {
                 String package_name = enabled_plugins.getString(enabled_plugins.getColumnIndex(Aware_Plugins.PLUGIN_PACKAGE_NAME));
                 active_plugins.add(package_name);
-            } while (enabled_plugins.moveToNext());
+            }
+            while (enabled_plugins.moveToNext());
         }
         if (enabled_plugins != null && !enabled_plugins.isClosed()) enabled_plugins.close();
 
-        if (active_plugins.size() > 0) {
-            for (String package_name : active_plugins) {
+        if (active_plugins.size() > 0)
+        {
+            for (String package_name : active_plugins)
+            {
                 stopPlugin(context, package_name);
             }
             if (Aware.DEBUG) Log.w(TAG, "AWARE plugins disabled...");
@@ -1783,11 +2088,13 @@ public class Aware extends Service {
      *
      * @author denzilferreira
      */
-    public static class AndroidPackageMonitor extends BroadcastReceiver {
+    public static class AndroidPackageMonitor extends BroadcastReceiver
+    {
         private static PackageManager mPkgManager;
 
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(Context context, Intent intent)
+        {
             mPkgManager = context.getPackageManager();
 
             Bundle extras = intent.getExtras();
@@ -1798,39 +2105,51 @@ public class Aware extends Service {
 
             if (!packageName.matches("com.aware.plugin.*")) return;
 
-            if (intent.getAction().equals(Intent.ACTION_PACKAGE_ADDED)) {
+            if (intent.getAction().equals(Intent.ACTION_PACKAGE_ADDED))
+            {
 
                 Intent installed = new Intent(ACTION_AWARE_PLUGIN_INSTALLED);
                 installed.putExtra(EXTRA_PLUGIN, packageName);
                 context.sendBroadcast(installed);
 
                 //Updating a package
-                if (extras.getBoolean(Intent.EXTRA_REPLACING)) {
+                if (extras.getBoolean(Intent.EXTRA_REPLACING))
+                {
                     if (Aware.DEBUG) Log.d(TAG, packageName + " is updating!");
 
                     //Check study compliance
-                    if (Aware.isStudy(context)) {
+                    if (Aware.isStudy(context))
+                    {
                         Cursor studyInfo = Aware.getStudy(context, Aware.getSetting(context, Aware_Preferences.WEBSERVICE_SERVER));
-                        if (studyInfo != null && studyInfo.moveToFirst()) {
-                            try {
+                        if (studyInfo != null && studyInfo.moveToFirst())
+                        {
+                            try
+                            {
                                 JSONArray studyConfig = new JSONArray(studyInfo.getString(studyInfo.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)));
                                 JSONArray plugins = new JSONArray();
-                                for (int i = 0; i < studyConfig.length(); i++) {
-                                    try {
+                                for (int i = 0; i < studyConfig.length(); i++)
+                                {
+                                    try
+                                    {
                                         JSONObject element = studyConfig.getJSONObject(i);
-                                        if (element.has("plugins")) {
+                                        if (element.has("plugins"))
+                                        {
                                             plugins = element.getJSONArray("plugins");
                                         }
-                                    } catch (JSONException e) {
+                                    }
+                                    catch (JSONException e)
+                                    {
                                         e.printStackTrace();
                                     }
                                 }
-                                for (int j = 0; j < plugins.length(); j++) {
+                                for (int j = 0; j < plugins.length(); j++)
+                                {
                                     JSONObject plugin_config = plugins.getJSONObject(j);
                                     String package_name = plugin_config.getString("plugin");
 
                                     //Log the updated plugin
-                                    if (package_name.equalsIgnoreCase(packageName)) {
+                                    if (package_name.equalsIgnoreCase(packageName))
+                                    {
                                         ContentValues complianceEntry = new ContentValues();
                                         complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DEVICE_ID, Aware.getSetting(context, Aware_Preferences.DEVICE_ID));
                                         complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TIMESTAMP, System.currentTimeMillis());
@@ -1850,7 +2169,9 @@ public class Aware extends Service {
                                             Log.d(Aware.TAG, "Study compliance check: " + complianceEntry.toString());
                                     }
                                 }
-                            } catch (JSONException e) {
+                            }
+                            catch (JSONException e)
+                            {
                                 e.printStackTrace();
                             }
                         }
@@ -1863,8 +2184,10 @@ public class Aware extends Service {
                     rowData.put(Aware_Plugins.PLUGIN_NAME, PluginsManager.getPluginName(context, packageName));
 
                     Cursor current_status = context.getContentResolver().query(Aware_Plugins.CONTENT_URI, new String[]{Aware_Plugins.PLUGIN_STATUS}, Aware_Plugins.PLUGIN_PACKAGE_NAME + " LIKE '" + packageName + "'", null, null);
-                    if (current_status != null && current_status.moveToFirst()) {
-                        if (current_status.getInt(current_status.getColumnIndex(Aware_Plugins.PLUGIN_STATUS)) == PluginsManager.PLUGIN_UPDATED) { //was updated, set to active now
+                    if (current_status != null && current_status.moveToFirst())
+                    {
+                        if (current_status.getInt(current_status.getColumnIndex(Aware_Plugins.PLUGIN_STATUS)) == PluginsManager.PLUGIN_UPDATED)
+                        { //was updated, set to active now
                             rowData.put(Aware_Plugins.PLUGIN_STATUS, Aware_Plugin.STATUS_PLUGIN_ON);
                         }
                     }
@@ -1879,7 +2202,8 @@ public class Aware extends Service {
                 }
 
                 //Installing new
-                try {
+                try
+                {
                     ApplicationInfo app = mPkgManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA);
 
                     ContentValues rowData = new ContentValues();
@@ -1889,9 +2213,11 @@ public class Aware extends Service {
                     rowData.put(Aware_Plugins.PLUGIN_STATUS, Aware_Plugin.STATUS_PLUGIN_ON);
                     rowData.put(Aware_Plugins.PLUGIN_ICON, PluginsManager.getPluginIcon(context, app.packageName));
 
-                    if (PluginsManager.isLocal(context, app.packageName)) {
+                    if (PluginsManager.isLocal(context, app.packageName))
+                    {
                         context.getContentResolver().update(Aware_Plugins.CONTENT_URI, rowData, Aware_Plugins.PLUGIN_PACKAGE_NAME + " LIKE '" + app.packageName + "'", null);
-                    } else {
+                    } else
+                    {
                         context.getContentResolver().insert(Aware_Plugins.CONTENT_URI, rowData);
                     }
 
@@ -1899,28 +2225,38 @@ public class Aware extends Service {
                         Log.d(TAG, "AWARE plugin added and activated:" + app.packageName);
 
                     //Check study compliance
-                    if (Aware.isStudy(context)) {
+                    if (Aware.isStudy(context))
+                    {
                         Cursor studyInfo = Aware.getStudy(context, Aware.getSetting(context, Aware_Preferences.WEBSERVICE_SERVER));
-                        if (studyInfo != null && studyInfo.moveToFirst()) {
-                            try {
+                        if (studyInfo != null && studyInfo.moveToFirst())
+                        {
+                            try
+                            {
                                 JSONArray studyConfig = new JSONArray(studyInfo.getString(studyInfo.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)));
                                 JSONArray plugins = new JSONArray();
-                                for (int i = 0; i < studyConfig.length(); i++) {
-                                    try {
+                                for (int i = 0; i < studyConfig.length(); i++)
+                                {
+                                    try
+                                    {
                                         JSONObject element = studyConfig.getJSONObject(i);
-                                        if (element.has("plugins")) {
+                                        if (element.has("plugins"))
+                                        {
                                             plugins = element.getJSONArray("plugins");
                                         }
-                                    } catch (JSONException e) {
+                                    }
+                                    catch (JSONException e)
+                                    {
                                         e.printStackTrace();
                                     }
                                 }
-                                for (int j = 0; j < plugins.length(); j++) {
+                                for (int j = 0; j < plugins.length(); j++)
+                                {
                                     JSONObject plugin_config = plugins.getJSONObject(j);
                                     String package_name = plugin_config.getString("plugin");
 
                                     //Participant installed necessary plugin
-                                    if (package_name.equalsIgnoreCase(packageName)) {
+                                    if (package_name.equalsIgnoreCase(packageName))
+                                    {
                                         ContentValues complianceEntry = new ContentValues();
                                         complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DEVICE_ID, Aware.getSetting(context, Aware_Preferences.DEVICE_ID));
                                         complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TIMESTAMP, System.currentTimeMillis());
@@ -1940,7 +2276,9 @@ public class Aware extends Service {
                                             Log.d(Aware.TAG, "Study compliance check: " + complianceEntry.toString());
                                     }
                                 }
-                            } catch (JSONException e) {
+                            }
+                            catch (JSONException e)
+                            {
                                 e.printStackTrace();
                             }
                         }
@@ -1949,14 +2287,18 @@ public class Aware extends Service {
 
                     Aware.startPlugin(context, app.packageName);
 
-                } catch (final NameNotFoundException e) {
+                }
+                catch (final NameNotFoundException e)
+                {
                     e.printStackTrace();
                 }
             }
 
-            if (intent.getAction().equals(Intent.ACTION_PACKAGE_REMOVED)) {
+            if (intent.getAction().equals(Intent.ACTION_PACKAGE_REMOVED))
+            {
                 //Updating
-                if (extras.getBoolean(Intent.EXTRA_REPLACING)) {
+                if (extras.getBoolean(Intent.EXTRA_REPLACING))
+                {
                     //this is an update, bail out.
                     return;
                 }
@@ -1966,28 +2308,38 @@ public class Aware extends Service {
                 context.sendBroadcast(installed);
 
                 //Check study compliance
-                if (Aware.isStudy(context)) {
+                if (Aware.isStudy(context))
+                {
                     Cursor studyInfo = Aware.getStudy(context, Aware.getSetting(context, Aware_Preferences.WEBSERVICE_SERVER));
-                    if (studyInfo != null && studyInfo.moveToFirst()) {
-                        try {
+                    if (studyInfo != null && studyInfo.moveToFirst())
+                    {
+                        try
+                        {
                             JSONArray studyConfig = new JSONArray(studyInfo.getString(studyInfo.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)));
                             JSONArray plugins = new JSONArray();
-                            for (int i = 0; i < studyConfig.length(); i++) {
-                                try {
+                            for (int i = 0; i < studyConfig.length(); i++)
+                            {
+                                try
+                                {
                                     JSONObject element = studyConfig.getJSONObject(i);
-                                    if (element.has("plugins")) {
+                                    if (element.has("plugins"))
+                                    {
                                         plugins = element.getJSONArray("plugins");
                                     }
-                                } catch (JSONException e) {
+                                }
+                                catch (JSONException e)
+                                {
                                     e.printStackTrace();
                                 }
                             }
-                            for (int j = 0; j < plugins.length(); j++) {
+                            for (int j = 0; j < plugins.length(); j++)
+                            {
                                 JSONObject plugin_config = plugins.getJSONObject(j);
                                 String package_name = plugin_config.getString("plugin");
 
                                 //Participant is breaking compliance, just uninstalled a plugin we have as needed for the study!
-                                if (package_name.equalsIgnoreCase(packageName)) {
+                                if (package_name.equalsIgnoreCase(packageName))
+                                {
                                     ContentValues complianceEntry = new ContentValues();
                                     complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DEVICE_ID, Aware.getSetting(context, Aware_Preferences.DEVICE_ID));
                                     complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TIMESTAMP, System.currentTimeMillis());
@@ -2007,7 +2359,9 @@ public class Aware extends Service {
                                         Log.d(Aware.TAG, "Study compliance check: " + complianceEntry.toString());
                                 }
                             }
-                        } catch (JSONException e) {
+                        }
+                        catch (JSONException e)
+                        {
                             e.printStackTrace();
                         }
                     }
@@ -2034,18 +2388,23 @@ public class Aware extends Service {
      */
     private static final Aware_Broadcaster aware_BR = new Aware_Broadcaster();
 
-    public static class Aware_Broadcaster extends BroadcastReceiver {
+    public static class Aware_Broadcaster extends BroadcastReceiver
+    {
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(Context context, Intent intent)
+        {
 
-            if (! (context.getPackageName().equals("com.aware.phone") || context.getApplicationContext().getResources().getBoolean(R.bool.standalone))) return;
+            if (!(context.getPackageName().equals("com.aware.phone") || context.getApplicationContext().getResources().getBoolean(R.bool.standalone)))
+                return;
             //We are only synching the device information, study compliance and overall framework execution logs.
             String[] DATABASE_TABLES = new String[]{Aware_Provider.DATABASE_TABLES[0], Aware_Provider.DATABASE_TABLES[3], Aware_Provider.DATABASE_TABLES[4]};
             String[] TABLES_FIELDS = new String[]{Aware_Provider.TABLES_FIELDS[0], Aware_Provider.TABLES_FIELDS[3], Aware_Provider.TABLES_FIELDS[4]};
             Uri[] CONTEXT_URIS = new Uri[]{Aware_Device.CONTENT_URI, Aware_Provider.Aware_Studies.CONTENT_URI, Aware_Provider.Aware_Log.CONTENT_URI};
 
-            if (intent.getAction().equals(Aware.ACTION_AWARE_SYNC_DATA) && Aware.getSetting(context, Aware_Preferences.STATUS_WEBSERVICE).equals("true")) {
-                for (int i = 0; i < DATABASE_TABLES.length; i++) {
+            if (intent.getAction().equals(Aware.ACTION_AWARE_SYNC_DATA) && Aware.getSetting(context, Aware_Preferences.STATUS_WEBSERVICE).equals("true"))
+            {
+                for (int i = 0; i < DATABASE_TABLES.length; i++)
+                {
                     Intent webserviceHelper = new Intent(context, WebserviceHelper.class);
                     webserviceHelper.setAction(WebserviceHelper.ACTION_AWARE_WEBSERVICE_SYNC_TABLE);
                     webserviceHelper.putExtra(WebserviceHelper.EXTRA_TABLE, DATABASE_TABLES[i]);
@@ -2055,13 +2414,16 @@ public class Aware extends Service {
                 }
             }
 
-            if (intent.getAction().equals(Aware.ACTION_AWARE_CLEAR_DATA)) {
-                for (int i = 0; i < DATABASE_TABLES.length; i++) {
+            if (intent.getAction().equals(Aware.ACTION_AWARE_CLEAR_DATA))
+            {
+                for (int i = 0; i < DATABASE_TABLES.length; i++)
+                {
                     context.getContentResolver().delete(Aware_Provider.Aware_Device.CONTENT_URI, null, null);
                     if (Aware.DEBUG) Log.d(TAG, "Cleared " + CONTEXT_URIS[i]);
 
                     //Clear remotely if webservices are active
-                    if (Aware.getSetting(context, Aware_Preferences.STATUS_WEBSERVICE).equals("true")) {
+                    if (Aware.getSetting(context, Aware_Preferences.STATUS_WEBSERVICE).equals("true"))
+                    {
                         Intent webserviceHelper = new Intent(context, WebserviceHelper.class);
                         webserviceHelper.setAction(WebserviceHelper.ACTION_AWARE_WEBSERVICE_CLEAR_TABLE);
                         webserviceHelper.putExtra(WebserviceHelper.EXTRA_TABLE, DATABASE_TABLES[i]);
@@ -2070,7 +2432,8 @@ public class Aware extends Service {
                 }
             }
 
-            if (intent.getAction().equals(Aware.ACTION_QUIT_STUDY)) {
+            if (intent.getAction().equals(Aware.ACTION_QUIT_STUDY))
+            {
                 Aware.reset(context);
             }
         }
@@ -2081,15 +2444,19 @@ public class Aware extends Service {
      */
     private static final Storage_Broadcaster storage_BR = new Storage_Broadcaster();
 
-    public static class Storage_Broadcaster extends BroadcastReceiver {
+    public static class Storage_Broadcaster extends BroadcastReceiver
+    {
         @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(Intent.ACTION_MEDIA_MOUNTED)) {
+        public void onReceive(Context context, Intent intent)
+        {
+            if (intent.getAction().equals(Intent.ACTION_MEDIA_MOUNTED))
+            {
                 if (Aware.DEBUG) Log.d(TAG, "Resuming AWARE data logging...");
                 Intent aware = new Intent(context, Aware.class);
                 context.startService(aware);
             }
-            if (intent.getAction().equals(Intent.ACTION_MEDIA_UNMOUNTED)) {
+            if (intent.getAction().equals(Intent.ACTION_MEDIA_UNMOUNTED))
+            {
                 if (Aware.DEBUG)
                     Log.w(TAG, "Stopping AWARE data logging until the SDCard is available again...");
                 Aware.stopAWARE(context);
@@ -2102,21 +2469,27 @@ public class Aware extends Service {
      */
     private static final AwareBoot awareBoot = new AwareBoot();
 
-    public static class AwareBoot extends BroadcastReceiver {
+    public static class AwareBoot extends BroadcastReceiver
+    {
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(Context context, Intent intent)
+        {
             boolean logging = false;
-            if ((context.getPackageName().equalsIgnoreCase("com.aware.phone") || context.getApplicationContext().getResources().getBoolean(R.bool.standalone))) {
+            if ((context.getPackageName().equalsIgnoreCase("com.aware.phone") || context.getApplicationContext().getResources().getBoolean(R.bool.standalone)))
+            {
                 logging = true;
             }
 
-            if (logging) {
-                try {
+            if (logging)
+            {
+                try
+                {
                     //Retrieve phone battery info
                     ContentValues rowData = new ContentValues();
                     Intent batt = context.getApplicationContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
                     Bundle extras = batt.getExtras();
-                    if (extras != null) {
+                    if (extras != null)
+                    {
                         rowData.put(Battery_Provider.Battery_Data.TIMESTAMP, System.currentTimeMillis());
                         rowData.put(Battery_Provider.Battery_Data.DEVICE_ID, Aware.getSetting(context, Aware_Preferences.DEVICE_ID));
                         rowData.put(Battery_Provider.Battery_Data.LEVEL, extras.getInt(BatteryManager.EXTRA_LEVEL));
@@ -2129,12 +2502,15 @@ public class Aware extends Service {
                     }
 
                     //Remove charging reminder if previously visible
-                    if (intent.getAction().equalsIgnoreCase(Intent.ACTION_BATTERY_CHANGED) && Aware.getSetting(context, Aware_Preferences.REMIND_TO_CHARGE).equalsIgnoreCase("true")) {
-                        if (extras.getInt(BatteryManager.EXTRA_STATUS) == BatteryManager.BATTERY_STATUS_CHARGING) {
+                    if (intent.getAction().equalsIgnoreCase(Intent.ACTION_BATTERY_CHANGED) && Aware.getSetting(context, Aware_Preferences.REMIND_TO_CHARGE).equalsIgnoreCase("true"))
+                    {
+                        if (extras.getInt(BatteryManager.EXTRA_STATUS) == BatteryManager.BATTERY_STATUS_CHARGING)
+                        {
                             checkBatteryLeft(context, true);
                         }
                     }
-                    if (intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED)) {
+                    if (intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED))
+                    {
                         Aware.debug(context, "phone: on");
                         rowData.put(Battery_Provider.Battery_Data.STATUS, Battery.STATUS_PHONE_BOOTED);
 
@@ -2144,33 +2520,44 @@ public class Aware extends Service {
                         if ((context.getPackageName().equals("com.aware.phone") || context.getApplicationContext().getResources().getBoolean(R.bool.standalone)))
                             context.sendBroadcast(new Intent(Aware.ACTION_AWARE_PRIORITY_FOREGROUND));
                     }
-                    if (intent.getAction().equalsIgnoreCase(Intent.ACTION_SHUTDOWN)) {
+                    if (intent.getAction().equalsIgnoreCase(Intent.ACTION_SHUTDOWN))
+                    {
                         Aware.debug(context, "phone: off");
                         rowData.put(Battery_Provider.Battery_Data.STATUS, Battery.STATUS_PHONE_SHUTDOWN);
                     }
-                    if (intent.getAction().equalsIgnoreCase(Intent.ACTION_REBOOT)) {
+                    if (intent.getAction().equalsIgnoreCase(Intent.ACTION_REBOOT))
+                    {
                         Aware.debug(context, "phone: reboot");
                         rowData.put(Battery_Provider.Battery_Data.STATUS, Battery.STATUS_PHONE_REBOOT);
                     }
                     if (intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED)
                             || intent.getAction().equalsIgnoreCase(Intent.ACTION_SHUTDOWN)
-                            || intent.getAction().equalsIgnoreCase(Intent.ACTION_REBOOT)) {
-                        try {
+                            || intent.getAction().equalsIgnoreCase(Intent.ACTION_REBOOT))
+                    {
+                        try
+                        {
                             if (Aware.DEBUG) Log.d(TAG, "Battery: " + rowData.toString());
                             context.getContentResolver().insert(Battery_Provider.Battery_Data.CONTENT_URI, rowData);
-                        } catch (SQLiteException e) {
+                        }
+                        catch (SQLiteException e)
+                        {
                             if (Aware.DEBUG) Log.d(TAG, e.getMessage());
-                        } catch (SQLException e) {
+                        }
+                        catch (SQLException e)
+                        {
                             if (Aware.DEBUG) Log.d(TAG, e.getMessage());
                         }
                     }
-                } catch (RuntimeException e) {
+                }
+                catch (RuntimeException e)
+                {
                     //Gingerbread does not allow these intents. Disregard for 2.3.3
                 }
             }
 
             //Guarantees that all plugins also come back up again on reboot
-            if (intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED)) {
+            if (intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED))
+            {
                 Intent aware = new Intent(context, Aware.class);
                 context.startService(aware);
             }
@@ -2179,59 +2566,75 @@ public class Aware extends Service {
 
     /**
      * Check whether a service is running or not
+     *
      * @param serviceClass
      * @return
      */
-    public static boolean isServiceRunning(Context context, Class<?> serviceClass) {
+    public static boolean isServiceRunning(Context context, Class<?> serviceClass)
+    {
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE))
+        {
+            if (serviceClass.getName().equals(service.service.getClassName()))
+            {
                 return true;
             }
         }
         return false;
     }
 
-    private static void complianceStatus(Context context) {
+    private static void complianceStatus(Context context)
+    {
         ConnectivityManager connManager = (ConnectivityManager) context.getSystemService(CONNECTIVITY_SERVICE);
         LocationManager locationManager = (LocationManager) context.getSystemService(LOCATION_SERVICE);
         TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(TELEPHONY_SERVICE);
 
         JSONObject complianceStatus = new JSONObject();
 
-        try {
+        try
+        {
             NetworkInfo active = connManager.getActiveNetworkInfo();
-            if (active != null && active.isConnectedOrConnecting()) {
+            if (active != null && active.isConnectedOrConnecting())
+            {
                 complianceStatus.put("internet", true);
-            } else {
+            } else
+            {
                 complianceStatus.put("internet", false);
             }
 
             NetworkInfo wifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-            if (wifi != null && wifi.isAvailable()) {
+            if (wifi != null && wifi.isAvailable())
+            {
                 complianceStatus.put("wifi", true);
-            } else {
+            } else
+            {
                 complianceStatus.put("wifi", false);
             }
 
             NetworkInfo bt = connManager.getNetworkInfo(ConnectivityManager.TYPE_BLUETOOTH);
-            if (bt != null && bt.isAvailable()) {
+            if (bt != null && bt.isAvailable())
+            {
                 complianceStatus.put("bt", true);
-            } else {
+            } else
+            {
                 complianceStatus.put("bt", false);
             }
 
             NetworkInfo network = connManager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-            if (network != null && network.isAvailable()) {
+            if (network != null && network.isAvailable())
+            {
                 complianceStatus.put("network", true);
-            } else {
+            } else
+            {
                 complianceStatus.put("network", false);
             }
 
             boolean airplane;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1)
+            {
                 airplane = Settings.Global.getInt(context.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
-            } else {
+            } else
+            {
                 airplane = Settings.System.getInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, 0) != 0;
             }
 
@@ -2242,7 +2645,9 @@ public class Aware extends Service {
 
             Aware.debug(context, complianceStatus.toString());
 
-        } catch (JSONException e) {
+        }
+        catch (JSONException e)
+        {
             e.printStackTrace();
         }
     }
@@ -2250,153 +2655,194 @@ public class Aware extends Service {
     /**
      * Start core and active services
      */
-    public static void startAWARE(Context context) {
+    public static void startAWARE(Context context)
+    {
 
         startScheduler(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_SIGNIFICANT_MOTION).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_SIGNIFICANT_MOTION).equals("true"))
+        {
             startSignificant(context);
         } else stopSignificant(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_ESM).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_ESM).equals("true"))
+        {
             startESM(context);
         } else stopESM(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_ACCELEROMETER).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_ACCELEROMETER).equals("true"))
+        {
             startAccelerometer(context);
         } else stopAccelerometer(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_INSTALLATIONS).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_INSTALLATIONS).equals("true"))
+        {
             startInstallations(context);
         } else stopInstallations(context);
 
         if (Aware.getSetting(context, Aware_Preferences.STATUS_LOCATION_GPS).equals("true")
                 || Aware.getSetting(context, Aware_Preferences.STATUS_LOCATION_NETWORK).equals("true")
-                || Aware.getSetting(context, Aware_Preferences.STATUS_LOCATION_PASSIVE).equals("true")) {
+                || Aware.getSetting(context, Aware_Preferences.STATUS_LOCATION_PASSIVE).equals("true"))
+        {
             startLocations(context);
         } else stopLocations(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_BLUETOOTH).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_BLUETOOTH).equals("true"))
+        {
             startBluetooth(context);
         } else stopBluetooth(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_SCREEN).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_SCREEN).equals("true"))
+        {
             startScreen(context);
         } else stopScreen(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_BATTERY).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_BATTERY).equals("true"))
+        {
             startBattery(context);
         } else stopBattery(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_NETWORK_EVENTS).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_NETWORK_EVENTS).equals("true"))
+        {
             startNetwork(context);
         } else stopNetwork(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_NETWORK_TRAFFIC).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_NETWORK_TRAFFIC).equals("true"))
+        {
             startTraffic(context);
         } else stopTraffic(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true") || Aware.getSetting(context, Aware_Preferences.STATUS_CALLS).equals("true") || Aware.getSetting(context, Aware_Preferences.STATUS_MESSAGES).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true") || Aware.getSetting(context, Aware_Preferences.STATUS_CALLS).equals("true") || Aware.getSetting(context, Aware_Preferences.STATUS_MESSAGES).equals("true"))
+        {
             startCommunication(context);
         } else stopCommunication(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_PROCESSOR).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_PROCESSOR).equals("true"))
+        {
             startProcessor(context);
         } else stopProcessor(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_TIMEZONE).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_TIMEZONE).equals("true"))
+        {
             startTimeZone(context);
         } else stopTimeZone(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_MQTT).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_MQTT).equals("true"))
+        {
             startMQTT(context);
         } else stopMQTT(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_GYROSCOPE).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_GYROSCOPE).equals("true"))
+        {
             startGyroscope(context);
         } else stopGyroscope(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_WIFI).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_WIFI).equals("true"))
+        {
             startWiFi(context);
         } else stopWiFi(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_TELEPHONY).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_TELEPHONY).equals("true"))
+        {
             startTelephony(context);
         } else stopTelephony(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_ROTATION).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_ROTATION).equals("true"))
+        {
             startRotation(context);
         } else stopRotation(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_LIGHT).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_LIGHT).equals("true"))
+        {
             startLight(context);
         } else stopLight(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_PROXIMITY).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_PROXIMITY).equals("true"))
+        {
             startProximity(context);
         } else stopProximity(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_MAGNETOMETER).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_MAGNETOMETER).equals("true"))
+        {
             startMagnetometer(context);
         } else stopMagnetometer(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_BAROMETER).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_BAROMETER).equals("true"))
+        {
             startBarometer(context);
         } else stopBarometer(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_GRAVITY).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_GRAVITY).equals("true"))
+        {
             startGravity(context);
         } else stopGravity(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_LINEAR_ACCELEROMETER).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_LINEAR_ACCELEROMETER).equals("true"))
+        {
             startLinearAccelerometer(context);
         } else stopLinearAccelerometer(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_TEMPERATURE).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_TEMPERATURE).equals("true"))
+        {
             startTemperature(context);
         } else stopTemperature(context);
 
-        if (Aware.getSetting(context, Aware_Preferences.STATUS_KEYBOARD).equals("true")) {
+        if (Aware.getSetting(context, Aware_Preferences.STATUS_KEYBOARD).equals("true"))
+        {
             startKeyboard(context);
         } else stopKeyboard(context);
     }
 
-    public static void startPlugins(Context context) {
-        if (context.getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone") || context.getApplicationContext().getResources().getBoolean(R.bool.standalone)) {
+    public static void startPlugins(Context context)
+    {
+        if (context.getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone") || context.getApplicationContext().getResources().getBoolean(R.bool.standalone))
+        {
             ArrayList<String> active_plugins = new ArrayList<>();
             Cursor enabled_plugins = context.getContentResolver().query(Aware_Plugins.CONTENT_URI, null, Aware_Plugins.PLUGIN_STATUS + "=" + Aware_Plugin.STATUS_PLUGIN_ON, null, null);
-            if (enabled_plugins != null && enabled_plugins.moveToFirst()) {
-                do {
+            if (enabled_plugins != null && enabled_plugins.moveToFirst())
+            {
+                do
+                {
                     String package_name = enabled_plugins.getString(enabled_plugins.getColumnIndex(Aware_Plugins.PLUGIN_PACKAGE_NAME));
                     active_plugins.add(package_name);
-                } while (enabled_plugins.moveToNext());
+                }
+                while (enabled_plugins.moveToNext());
             }
             if (enabled_plugins != null && !enabled_plugins.isClosed())
                 enabled_plugins.close();
 
-            if (active_plugins.size() > 0) {
-                for (String package_name : active_plugins) {
+            if (active_plugins.size() > 0)
+            {
+                for (String package_name : active_plugins)
+                {
                     startPlugin(context, package_name);
                 }
             }
         }
     }
 
-    public static void stopPlugins(Context context) {
-        if (context.getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone") || context.getApplicationContext().getResources().getBoolean(R.bool.standalone)) {
+    public static void stopPlugins(Context context)
+    {
+        if (context.getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone") || context.getApplicationContext().getResources().getBoolean(R.bool.standalone))
+        {
             ArrayList<String> active_plugins = new ArrayList<>();
             Cursor enabled_plugins = context.getContentResolver().query(Aware_Plugins.CONTENT_URI, null, Aware_Plugins.PLUGIN_STATUS + "=" + Aware_Plugin.STATUS_PLUGIN_ON, null, null);
-            if (enabled_plugins != null && enabled_plugins.moveToFirst()) {
-                do {
+            if (enabled_plugins != null && enabled_plugins.moveToFirst())
+            {
+                do
+                {
                     String package_name = enabled_plugins.getString(enabled_plugins.getColumnIndex(Aware_Plugins.PLUGIN_PACKAGE_NAME));
                     active_plugins.add(package_name);
-                } while (enabled_plugins.moveToNext());
+                }
+                while (enabled_plugins.moveToNext());
             }
             if (enabled_plugins != null && !enabled_plugins.isClosed())
                 enabled_plugins.close();
 
-            if (active_plugins.size() > 0) {
-                for (String package_name : active_plugins) {
+            if (active_plugins.size() > 0)
+            {
+                for (String package_name : active_plugins)
+                {
                     stopPlugin(context, package_name);
                 }
             }
@@ -2408,7 +2854,8 @@ public class Aware extends Service {
      *
      * @param context
      */
-    public static void stopAWARE(Context context) {
+    public static void stopAWARE(Context context)
+    {
         if (context == null) return;
 
         Intent aware = new Intent(context, Aware.class);
@@ -2448,7 +2895,8 @@ public class Aware extends Service {
      *
      * @param context
      */
-    public static void startSignificant(Context context) {
+    public static void startSignificant(Context context)
+    {
         if (context == null) return;
         if (significantSrv == null) significantSrv = new Intent(context, SignificantMotion.class);
         context.startService(significantSrv);
@@ -2459,7 +2907,8 @@ public class Aware extends Service {
      *
      * @param context
      */
-    public static void stopSignificant(Context context) {
+    public static void stopSignificant(Context context)
+    {
         if (context == null) return;
         if (significantSrv != null) context.stopService(significantSrv);
     }
@@ -2469,7 +2918,8 @@ public class Aware extends Service {
      *
      * @param context
      */
-    public static void startScheduler(Context context) {
+    public static void startScheduler(Context context)
+    {
         if (context == null) return;
         if (scheduler == null) scheduler = new Intent(context, Scheduler.class);
         context.startService(scheduler);
@@ -2480,7 +2930,8 @@ public class Aware extends Service {
      *
      * @param context
      */
-    public static void stopScheduler(Context context) {
+    public static void stopScheduler(Context context)
+    {
         if (context == null) return;
         if (scheduler != null) context.stopService(scheduler);
     }
@@ -2488,7 +2939,8 @@ public class Aware extends Service {
     /**
      * Start keyboard module
      */
-    public static void startKeyboard(Context context) {
+    public static void startKeyboard(Context context)
+    {
         if (context == null) return;
         if (keyboard == null) keyboard = new Intent(context, Keyboard.class);
         context.startService(keyboard);
@@ -2497,7 +2949,8 @@ public class Aware extends Service {
     /**
      * Stop keyboard module
      */
-    public static void stopKeyboard(Context context) {
+    public static void stopKeyboard(Context context)
+    {
         if (context == null) return;
         if (keyboard != null) context.stopService(keyboard);
     }
@@ -2505,7 +2958,8 @@ public class Aware extends Service {
     /**
      * Start Installations module
      */
-    public static void startInstallations(Context context) {
+    public static void startInstallations(Context context)
+    {
         if (context == null) return;
         if (installationsSrv == null) installationsSrv = new Intent(context, Installations.class);
         context.startService(installationsSrv);
@@ -2514,7 +2968,8 @@ public class Aware extends Service {
     /**
      * Stop Installations module
      */
-    public static void stopInstallations(Context context) {
+    public static void stopInstallations(Context context)
+    {
         if (context == null) return;
         if (installationsSrv != null) context.stopService(installationsSrv);
     }
@@ -2522,7 +2977,8 @@ public class Aware extends Service {
     /**
      * Start ESM module
      */
-    public static void startESM(Context context) {
+    public static void startESM(Context context)
+    {
         if (context == null) return;
         if (esmSrv == null) esmSrv = new Intent(context, ESM.class);
         context.startService(esmSrv);
@@ -2531,7 +2987,8 @@ public class Aware extends Service {
     /**
      * Stop ESM module
      */
-    public static void stopESM(Context context) {
+    public static void stopESM(Context context)
+    {
         if (context == null) return;
         if (esmSrv != null) context.stopService(esmSrv);
     }
@@ -2539,7 +2996,8 @@ public class Aware extends Service {
     /**
      * Start Temperature module
      */
-    public static void startTemperature(Context context) {
+    public static void startTemperature(Context context)
+    {
         if (context == null) return;
         if (temperatureSrv == null) temperatureSrv = new Intent(context, Temperature.class);
         context.startService(temperatureSrv);
@@ -2548,7 +3006,8 @@ public class Aware extends Service {
     /**
      * Stop Temperature module
      */
-    public static void stopTemperature(Context context) {
+    public static void stopTemperature(Context context)
+    {
         if (context == null) return;
         if (temperatureSrv != null) context.stopService(temperatureSrv);
     }
@@ -2556,7 +3015,8 @@ public class Aware extends Service {
     /**
      * Start Linear Accelerometer module
      */
-    public static void startLinearAccelerometer(Context context) {
+    public static void startLinearAccelerometer(Context context)
+    {
         if (context == null) return;
         if (linear_accelSrv == null)
             linear_accelSrv = new Intent(context, LinearAccelerometer.class);
@@ -2566,7 +3026,8 @@ public class Aware extends Service {
     /**
      * Stop Linear Accelerometer module
      */
-    public static void stopLinearAccelerometer(Context context) {
+    public static void stopLinearAccelerometer(Context context)
+    {
         if (context == null) return;
         if (linear_accelSrv != null) context.stopService(linear_accelSrv);
     }
@@ -2574,7 +3035,8 @@ public class Aware extends Service {
     /**
      * Start Gravity module
      */
-    public static void startGravity(Context context) {
+    public static void startGravity(Context context)
+    {
         if (context == null) return;
         if (gravitySrv == null) gravitySrv = new Intent(context, Gravity.class);
         context.startService(gravitySrv);
@@ -2583,7 +3045,8 @@ public class Aware extends Service {
     /**
      * Stop Gravity module
      */
-    public static void stopGravity(Context context) {
+    public static void stopGravity(Context context)
+    {
         if (context == null) return;
         if (gravitySrv != null) context.stopService(gravitySrv);
     }
@@ -2591,7 +3054,8 @@ public class Aware extends Service {
     /**
      * Start Barometer module
      */
-    public static void startBarometer(Context context) {
+    public static void startBarometer(Context context)
+    {
         if (context == null) return;
         if (barometerSrv == null) barometerSrv = new Intent(context, Barometer.class);
         context.startService(barometerSrv);
@@ -2600,7 +3064,8 @@ public class Aware extends Service {
     /**
      * Stop Barometer module
      */
-    public static void stopBarometer(Context context) {
+    public static void stopBarometer(Context context)
+    {
         if (context == null) return;
         if (barometerSrv != null) context.stopService(barometerSrv);
     }
@@ -2608,7 +3073,8 @@ public class Aware extends Service {
     /**
      * Start Magnetometer module
      */
-    public static void startMagnetometer(Context context) {
+    public static void startMagnetometer(Context context)
+    {
         if (context == null) return;
         if (magnetoSrv == null) magnetoSrv = new Intent(context, Magnetometer.class);
         context.startService(magnetoSrv);
@@ -2617,7 +3083,8 @@ public class Aware extends Service {
     /**
      * Stop Magnetometer module
      */
-    public static void stopMagnetometer(Context context) {
+    public static void stopMagnetometer(Context context)
+    {
         if (context == null) return;
         if (magnetoSrv != null) context.stopService(magnetoSrv);
     }
@@ -2625,7 +3092,8 @@ public class Aware extends Service {
     /**
      * Start Proximity module
      */
-    public static void startProximity(Context context) {
+    public static void startProximity(Context context)
+    {
         if (context == null) return;
         if (proximitySrv == null) proximitySrv = new Intent(context, Proximity.class);
         context.startService(proximitySrv);
@@ -2634,7 +3102,8 @@ public class Aware extends Service {
     /**
      * Stop Proximity module
      */
-    public static void stopProximity(Context context) {
+    public static void stopProximity(Context context)
+    {
         if (context == null) return;
         if (proximitySrv != null) context.stopService(proximitySrv);
     }
@@ -2642,7 +3111,8 @@ public class Aware extends Service {
     /**
      * Start Light module
      */
-    public static void startLight(Context context) {
+    public static void startLight(Context context)
+    {
         if (context == null) return;
         if (lightSrv == null) lightSrv = new Intent(context, Light.class);
         context.startService(lightSrv);
@@ -2651,7 +3121,8 @@ public class Aware extends Service {
     /**
      * Stop Light module
      */
-    public static void stopLight(Context context) {
+    public static void stopLight(Context context)
+    {
         if (context == null) return;
         if (lightSrv != null) context.stopService(lightSrv);
     }
@@ -2659,7 +3130,8 @@ public class Aware extends Service {
     /**
      * Start Rotation module
      */
-    public static void startRotation(Context context) {
+    public static void startRotation(Context context)
+    {
         if (context == null) return;
         if (rotationSrv == null) rotationSrv = new Intent(context, Rotation.class);
         context.startService(rotationSrv);
@@ -2668,7 +3140,8 @@ public class Aware extends Service {
     /**
      * Stop Rotation module
      */
-    public static void stopRotation(Context context) {
+    public static void stopRotation(Context context)
+    {
         if (context == null) return;
         if (rotationSrv != null) context.stopService(rotationSrv);
     }
@@ -2676,7 +3149,8 @@ public class Aware extends Service {
     /**
      * Start the Telephony module
      */
-    public static void startTelephony(Context context) {
+    public static void startTelephony(Context context)
+    {
         if (context == null) return;
         if (telephonySrv == null) telephonySrv = new Intent(context, Telephony.class);
         context.startService(telephonySrv);
@@ -2685,7 +3159,8 @@ public class Aware extends Service {
     /**
      * Stop the Telephony module
      */
-    public static void stopTelephony(Context context) {
+    public static void stopTelephony(Context context)
+    {
         if (context == null) return;
         if (telephonySrv != null) context.stopService(telephonySrv);
     }
@@ -2693,13 +3168,15 @@ public class Aware extends Service {
     /**
      * Start the WiFi module
      */
-    public static void startWiFi(Context context) {
+    public static void startWiFi(Context context)
+    {
         if (context == null) return;
         if (wifiSrv == null) wifiSrv = new Intent(context, WiFi.class);
         context.startService(wifiSrv);
     }
 
-    public static void stopWiFi(Context context) {
+    public static void stopWiFi(Context context)
+    {
         if (context == null) return;
         if (wifiSrv != null) context.stopService(wifiSrv);
     }
@@ -2707,7 +3184,8 @@ public class Aware extends Service {
     /**
      * Start the gyroscope module
      */
-    public static void startGyroscope(Context context) {
+    public static void startGyroscope(Context context)
+    {
         if (context == null) return;
         if (gyroSrv == null) gyroSrv = new Intent(context, Gyroscope.class);
         context.startService(gyroSrv);
@@ -2716,7 +3194,8 @@ public class Aware extends Service {
     /**
      * Stop the gyroscope module
      */
-    public static void stopGyroscope(Context context) {
+    public static void stopGyroscope(Context context)
+    {
         if (context == null) return;
         if (gyroSrv != null) context.stopService(gyroSrv);
     }
@@ -2724,7 +3203,8 @@ public class Aware extends Service {
     /**
      * Start the accelerometer module
      */
-    public static void startAccelerometer(Context context) {
+    public static void startAccelerometer(Context context)
+    {
         if (context == null) return;
         if (accelerometerSrv == null) accelerometerSrv = new Intent(context, Accelerometer.class);
         context.startService(accelerometerSrv);
@@ -2733,7 +3213,8 @@ public class Aware extends Service {
     /**
      * Stop the accelerometer module
      */
-    public static void stopAccelerometer(Context context) {
+    public static void stopAccelerometer(Context context)
+    {
         if (context == null) return;
         if (accelerometerSrv != null) context.stopService(accelerometerSrv);
     }
@@ -2741,7 +3222,8 @@ public class Aware extends Service {
     /**
      * Start the Processor module
      */
-    public static void startProcessor(Context context) {
+    public static void startProcessor(Context context)
+    {
         if (context == null) return;
         if (processorSrv == null) processorSrv = new Intent(context, Processor.class);
         context.startService(processorSrv);
@@ -2750,7 +3232,8 @@ public class Aware extends Service {
     /**
      * Stop the Processor module
      */
-    public static void stopProcessor(Context context) {
+    public static void stopProcessor(Context context)
+    {
         if (context == null) return;
         if (processorSrv != null) context.stopService(processorSrv);
     }
@@ -2758,7 +3241,8 @@ public class Aware extends Service {
     /**
      * Start the locations module
      */
-    public static void startLocations(Context context) {
+    public static void startLocations(Context context)
+    {
         if (context == null) return;
         if (locationsSrv == null) locationsSrv = new Intent(context, Locations.class);
         context.startService(locationsSrv);
@@ -2767,11 +3251,13 @@ public class Aware extends Service {
     /**
      * Stop the locations module
      */
-    public static void stopLocations(Context context) {
+    public static void stopLocations(Context context)
+    {
         if (context == null) return;
         if (!Aware.getSetting(context, Aware_Preferences.STATUS_LOCATION_GPS).equals("true")
                 && !Aware.getSetting(context, Aware_Preferences.STATUS_LOCATION_NETWORK).equals("true")
-                && !Aware.getSetting(context, Aware_Preferences.STATUS_LOCATION_PASSIVE).equals("true")) {
+                && !Aware.getSetting(context, Aware_Preferences.STATUS_LOCATION_PASSIVE).equals("true"))
+        {
             if (locationsSrv != null) context.stopService(locationsSrv);
         }
     }
@@ -2779,7 +3265,8 @@ public class Aware extends Service {
     /**
      * Start the bluetooth module
      */
-    public static void startBluetooth(Context context) {
+    public static void startBluetooth(Context context)
+    {
         if (context == null) return;
         if (bluetoothSrv == null) bluetoothSrv = new Intent(context, Bluetooth.class);
         context.startService(bluetoothSrv);
@@ -2788,7 +3275,8 @@ public class Aware extends Service {
     /**
      * Stop the bluetooth module
      */
-    public static void stopBluetooth(Context context) {
+    public static void stopBluetooth(Context context)
+    {
         if (context == null) return;
         if (bluetoothSrv != null) context.stopService(bluetoothSrv);
     }
@@ -2796,7 +3284,8 @@ public class Aware extends Service {
     /**
      * Start the screen module
      */
-    public static void startScreen(Context context) {
+    public static void startScreen(Context context)
+    {
         if (context == null) return;
         if (screenSrv == null) screenSrv = new Intent(context, Screen.class);
         context.startService(screenSrv);
@@ -2805,7 +3294,8 @@ public class Aware extends Service {
     /**
      * Stop the screen module
      */
-    public static void stopScreen(Context context) {
+    public static void stopScreen(Context context)
+    {
         if (context == null) return;
         if (screenSrv != null) context.stopService(screenSrv);
     }
@@ -2813,7 +3303,8 @@ public class Aware extends Service {
     /**
      * Start battery module
      */
-    public static void startBattery(Context context) {
+    public static void startBattery(Context context)
+    {
         if (context == null) return;
         if (batterySrv == null) batterySrv = new Intent(context, Battery.class);
         context.startService(batterySrv);
@@ -2822,7 +3313,8 @@ public class Aware extends Service {
     /**
      * Stop battery module
      */
-    public static void stopBattery(Context context) {
+    public static void stopBattery(Context context)
+    {
         if (context == null) return;
         if (batterySrv != null) context.stopService(batterySrv);
     }
@@ -2830,7 +3322,8 @@ public class Aware extends Service {
     /**
      * Start network module
      */
-    public static void startNetwork(Context context) {
+    public static void startNetwork(Context context)
+    {
         if (context == null) return;
         if (networkSrv == null) networkSrv = new Intent(context, Network.class);
         context.startService(networkSrv);
@@ -2839,7 +3332,8 @@ public class Aware extends Service {
     /**
      * Stop network module
      */
-    public static void stopNetwork(Context context) {
+    public static void stopNetwork(Context context)
+    {
         if (context == null) return;
         if (networkSrv != null) context.stopService(networkSrv);
     }
@@ -2847,7 +3341,8 @@ public class Aware extends Service {
     /**
      * Start traffic module
      */
-    public static void startTraffic(Context context) {
+    public static void startTraffic(Context context)
+    {
         if (context == null) return;
         if (trafficSrv == null) trafficSrv = new Intent(context, Traffic.class);
         context.startService(trafficSrv);
@@ -2856,7 +3351,8 @@ public class Aware extends Service {
     /**
      * Stop traffic module
      */
-    public static void stopTraffic(Context context) {
+    public static void stopTraffic(Context context)
+    {
         if (context == null) return;
         if (trafficSrv != null) context.stopService(trafficSrv);
     }
@@ -2864,7 +3360,8 @@ public class Aware extends Service {
     /**
      * Start the Timezone module
      */
-    public static void startTimeZone(Context context) {
+    public static void startTimeZone(Context context)
+    {
         if (context == null) return;
         if (timeZoneSrv == null) timeZoneSrv = new Intent(context, Timezone.class);
         context.startService(timeZoneSrv);
@@ -2873,7 +3370,8 @@ public class Aware extends Service {
     /**
      * Stop the Timezone module
      */
-    public static void stopTimeZone(Context context) {
+    public static void stopTimeZone(Context context)
+    {
         if (context == null) return;
         if (timeZoneSrv != null) context.stopService(timeZoneSrv);
     }
@@ -2881,7 +3379,8 @@ public class Aware extends Service {
     /**
      * Start communication module
      */
-    public static void startCommunication(Context context) {
+    public static void startCommunication(Context context)
+    {
         if (context == null) return;
         if (communicationSrv == null) communicationSrv = new Intent(context, Communication.class);
         context.startService(communicationSrv);
@@ -2890,11 +3389,13 @@ public class Aware extends Service {
     /**
      * Stop communication module
      */
-    public static void stopCommunication(Context context) {
+    public static void stopCommunication(Context context)
+    {
         if (context == null) return;
         if (!Aware.getSetting(context, Aware_Preferences.STATUS_COMMUNICATION_EVENTS).equals("true")
                 && !Aware.getSetting(context, Aware_Preferences.STATUS_CALLS).equals("true")
-                && !Aware.getSetting(context, Aware_Preferences.STATUS_MESSAGES).equals("true")) {
+                && !Aware.getSetting(context, Aware_Preferences.STATUS_MESSAGES).equals("true"))
+        {
             if (communicationSrv != null) context.stopService(communicationSrv);
         }
     }
@@ -2902,7 +3403,8 @@ public class Aware extends Service {
     /**
      * Start MQTT module
      */
-    public static void startMQTT(Context context) {
+    public static void startMQTT(Context context)
+    {
         if (context == null) return;
         if (mqttSrv == null) mqttSrv = new Intent(context, Mqtt.class);
         context.startService(mqttSrv);
@@ -2911,7 +3413,8 @@ public class Aware extends Service {
     /**
      * Stop MQTT module
      */
-    public static void stopMQTT(Context context) {
+    public static void stopMQTT(Context context)
+    {
         if (context == null) return;
         if (mqttSrv != null) context.stopService(mqttSrv);
     }
