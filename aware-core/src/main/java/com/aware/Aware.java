@@ -62,7 +62,7 @@ public class Aware extends Service {
     /**
      * Debug flag (default = false).
      */
-    public static boolean DEBUG = false;
+    public static boolean DEBUG = true;
 
     /**
      * Debug tag (default = "AWARE").
@@ -405,6 +405,7 @@ public class Aware extends Service {
         }
     }
 
+    // TODO RIO: Replace POST to webserver
     private class AsyncPing extends AsyncTask<Void, Void, Boolean> {
         @Override
         protected Boolean doInBackground(Void... params) {
@@ -478,6 +479,7 @@ public class Aware extends Service {
         return is_ignored;
     }
 
+    // TODO RIO: Replace POST to webserver
     private class AsyncStudyCheck extends AsyncTask<Void, Void, Boolean> {
 
         @Override
@@ -1623,6 +1625,7 @@ public class Aware extends Service {
         return output;
     }
 
+    // TODO RIO: Check if this needs to be updated
     /**
      * Used by self-contained apps to join a study
      */
@@ -1652,6 +1655,7 @@ public class Aware extends Service {
                         //wait until we have the certificate downloaded
                     }
 
+                    // TODO RIO: Replace GET to webserver a GET to study config URL
                     try {
                         request = new Https(SSLManager.getHTTPS(getApplicationContext(), full_url)).dataGET(full_url.substring(0, full_url.indexOf("/index.php")) + "/index.php/webservice/client_get_study_info/" + study_api_key, true);
                     } catch (FileNotFoundException e) {
@@ -1684,6 +1688,7 @@ public class Aware extends Service {
                             e.printStackTrace();
                         }
 
+                        // TODO RIO: Replace POST to webserver with DB insert
                         String answer;
                         if (protocol.equals("https")) {
                             try {

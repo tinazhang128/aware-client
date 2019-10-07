@@ -59,6 +59,7 @@ public class StudyUtils extends IntentService {
         String study_api_key = path_segments.get(path_segments.size() - 1);
         String study_id = path_segments.get(path_segments.size() - 2);
 
+        // TODO RIO: Replace GET to webserver a GET to study config URL
         String request;
         if (protocol.equals("https")) {
 
@@ -94,6 +95,7 @@ public class StudyUtils extends IntentService {
                     e.printStackTrace();
                 }
 
+                // TODO RIO: Replace POST to webserver with DB insert
                 String answer;
                 if (protocol.equals("https")) {
                     try {
@@ -255,6 +257,7 @@ public class StudyUtils extends IntentService {
             }
         }
 
+        // TODO RIO: Set ESMs here
         //Set schedulers
         if (schedulers.length() > 0)
             Scheduler.setSchedules(context, schedulers);

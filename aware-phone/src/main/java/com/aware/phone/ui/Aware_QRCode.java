@@ -94,6 +94,7 @@ public class Aware_QRCode extends Aware_Activity implements ZBarScannerView.Resu
     //Zbar QRCode handler
     @Override
     public void handleResult(Result result) {
+        Log.d(Aware.TAG, "QR Code result: " + result.getContents());
         new StudyData().execute(result.getContents());
     }
 
@@ -115,7 +116,7 @@ public class Aware_QRCode extends Aware_Activity implements ZBarScannerView.Resu
             loader = new ProgressDialog(Aware_QRCode.this);
             loader.setTitle("Loading study");
             loader.setMessage("Please wait...");
-            loader.setCancelable(false);
+            loader.setCancelable(true);
             loader.setIndeterminate(true);
             loader.show();
         }
@@ -139,6 +140,7 @@ public class Aware_QRCode extends Aware_Activity implements ZBarScannerView.Resu
                 study_api_key = path_segments.get(path_segments.size() - 1);
                 study_id = path_segments.get(path_segments.size() - 2);
 
+                // TODO RIO: Replace GET to webserver a GET to study config URL
                 String request;
                 if (protocol.equals("https")) {
                     //Note: Joining a study always downloads the certificate.
@@ -178,6 +180,8 @@ public class Aware_QRCode extends Aware_Activity implements ZBarScannerView.Resu
                             e.printStackTrace();
                         }
 
+                        // TODO RIO: Replace POST to webserver with DB insert
+                        // This is where the study config is obtained
                         String answer;
                         if (protocol.equals("https")) {
                             try {
@@ -192,6 +196,7 @@ public class Aware_QRCode extends Aware_Activity implements ZBarScannerView.Resu
                         if (answer != null) {
                             try {
                                 JSONArray configs_study = new JSONArray(answer);
+                                Log.i(Aware.TAG, "Study config: " + configs_study);
                                 if (!configs_study.getJSONObject(0).has("message")) {
                                     study_config = configs_study.toString();
                                 }

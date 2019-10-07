@@ -637,7 +637,7 @@ public class Aware_Preferences {
     public static final String FOREGROUND_PRIORITY = "foreground_priority";
 
     /**
-     * Fallback to network sync after xh have elapsed without WiFi synching
+     * Fallback to network sync after xh have elapsed without WiFi syncing
      */
     public static final String WEBSERVICE_FALLBACK_NETWORK = "fallback_network";
 
@@ -655,4 +655,50 @@ public class Aware_Preferences {
      * Lock interface after participant joins study
      */
     public static final String INTERFACE_LOCKED = "interface_locked";
+
+    /**
+     * Host of remote database
+     */
+    public static final String DB_HOST = "database_host";
+
+    /**
+     * Port of remote database
+     */
+    public static final String DB_PORT = "database_PORT";
+
+    /**
+     * Name of remote database
+     */
+    public static final String DB_NAME = "database_name";
+
+    /**
+     * Username for remote database
+     */
+    public static final String DB_USERNAME = "database_username";
+
+    /**
+     * Password for remote database
+     */
+    public static final String DB_PASSWORD = "database_password";
+
+    /**
+     * Certificate Authority (CA) of the remote database.
+     * This needs to be added to the application's trust store in case the CA is self signed.
+     */
+    public static final String DB_CA = "database_certificate_authority";
+
+    /**
+     * Client Certificate identifying this application used to connect to the remote database
+     */
+    public static final String DB_CLIENT_CERT = "database_client_certificate";
+
+    /**
+     * Client private key used with the Client certificate to connect to the remote database
+     */
+    public static final String DB_CLIENT_KEY = "database_client_key";
+
+    /**
+     * AES 128-bit key for decrypting study config file
+     */
+    public static final String STUDY_CONFIG_KEY = "study_config_key";
 }

@@ -28,7 +28,7 @@ public class TestESM implements AwareTest {
 
     @Override
     public void test(Context context) {
-//        testESMS(context);
+        testESMS(context);
 //        trialESMS(context);
 //        testFlow(context);
 //        testTimeoutQueue(context);
@@ -38,7 +38,7 @@ public class TestESM implements AwareTest {
 //        testOptionsOverflow(context);
 //        testNotificationRetries(context);
 //        testESMWeb(context);
-        testESMDate(context);
+//        testESMDate(context);
     }
 
     private void testESMDate(Context context) {

@@ -10,6 +10,7 @@ import org.json.JSONObject;
  * Created by dteixeir on 01/02/2018.
  */
 
+// TODO RIO: What does this jenkins do?
 public class Jenkins {
 
     private String TAG = "AWARE:Jenkins";

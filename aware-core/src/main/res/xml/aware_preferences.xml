@@ -825,7 +825,7 @@
             android:title="AWARE Study">
 
             <CheckBoxPreference
-                android:defaultValue="false"
+                android:defaultValue="true"
                 android:key="status_webservice"
                 android:persistent="true"
                 android:title="Active" />

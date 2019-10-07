@@ -49,6 +49,7 @@ public class Aware_Join_Study extends Aware_Activity {
     private LinearLayout llPluginsRequired;
 
     public static final String EXTRA_STUDY_URL = "study_url";
+    public static final String EXTRA_STUDY_CONFIG = "study_config";
 
     private static String study_url;
     private JSONArray study_configs;
@@ -91,7 +92,17 @@ public class Aware_Join_Study extends Aware_Activity {
         llPluginsRequired = (LinearLayout) findViewById(R.id.ll_plugins_required);
 
         study_url = getIntent().getStringExtra(EXTRA_STUDY_URL);
+        String study_config_str = getIntent().getStringExtra(EXTRA_STUDY_CONFIG);
+        JSONObject studyConfig;
+        if (!study_config_str.isEmpty()) {
+            try {
+                 studyConfig = new JSONObject(study_config_str);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
 
+        // TODO: Deeplink - validate study here
         //If we are getting here from an AWARE study link
         String scheme = getIntent().getScheme();
         if (scheme != null) {
@@ -290,6 +301,7 @@ public class Aware_Join_Study extends Aware_Activity {
 
                 Log.d(Aware.TAG, "Study API: " + study_api_key + " \nStudy ID: " + study_id);
 
+                // TODO RIO: Replace GET to webserver a GET to database certificate
                 String request;
                 if (protocol.equals("https")) {
                     //Note: Joining a study always downloads the certificate.
@@ -334,6 +346,8 @@ public class Aware_Join_Study extends Aware_Activity {
                             e.printStackTrace();
                         }
 
+                        // TODO RIO: Replace POST to webserver with DB insert
+                        // This is where the study config is obtained
                         String answer;
                         if (protocol.equals("https")) {
                             try {

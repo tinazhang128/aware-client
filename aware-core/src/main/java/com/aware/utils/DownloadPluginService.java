@@ -62,6 +62,7 @@ public class DownloadPluginService extends IntentService {
         String study_host = study_url.substring(0, study_url.indexOf("/index.php"));
         String protocol = study_url.substring(0, study_url.indexOf(":"));
 
+        // TODO RIO: Figure out if you should just download all the plugins on app installation
         String response;
         if( protocol.equals("https") ) {
             try {

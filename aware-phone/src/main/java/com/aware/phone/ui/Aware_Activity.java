@@ -14,6 +14,7 @@ import com.aware.Aware;
 import com.aware.Aware_Preferences;
 import com.aware.phone.Aware_Client;
 import com.aware.phone.R;
+import com.aware.phone.ui.dialogs.JoinStudyDialog;
 import com.aware.ui.PermissionsHandler;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -64,6 +65,8 @@ public abstract class Aware_Activity extends AppCompatPreferenceActivity {
                 item.setVisible(false);
             if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_team)) && Aware.is_watch(this))
                 item.setVisible(false);
+            if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_join_study_link)) && Aware.is_watch(this))
+                item.setVisible(false);
             if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_study)) && Aware.is_watch(this))
                 item.setVisible(false);
             if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_sync)) && !Aware.getSetting(this, Aware_Preferences.STATUS_WEBSERVICE).equals("true"))
@@ -105,6 +108,9 @@ public abstract class Aware_Activity extends AppCompatPreferenceActivity {
             Toast.makeText(getApplicationContext(), "Syncing data...", Toast.LENGTH_SHORT).show();
             Intent sync = new Intent(Aware.ACTION_AWARE_SYNC_DATA);
             sendBroadcast(sync);
+        }
+        if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_join_study_link))) {
+            new JoinStudyDialog(Aware_Activity.this).showDialog();
         }
         return super.onOptionsItemSelected(item);
     }

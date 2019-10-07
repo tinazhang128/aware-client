@@ -1,11 +1,15 @@
-
-package com.aware.phone;
+package com.aware.phone.ui;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.content.*;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -18,33 +22,51 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.*;
+import android.os.Handler;
+import android.preference.CheckBoxPreference;
+import android.preference.EditTextPreference;
+import android.preference.ListPreference;
+import android.preference.Preference;
+import android.preference.PreferenceGroup;
+import android.preference.PreferenceManager;
+import android.preference.PreferenceScreen;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ListAdapter;
 import android.widget.Toast;
-import androidx.appcompat.widget.Toolbar;
-import androidx.core.content.ContextCompat;
-import androidx.core.content.PermissionChecker;
+
 import com.aware.Applications;
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
-import com.aware.phone.ui.Aware_Activity;
-import com.aware.phone.ui.Aware_Join_Study;
-import com.aware.phone.ui.Aware_Participant;
+import com.aware.phone.Aware_Client;
+import com.aware.phone.R;
+import com.aware.phone.ui.dialogs.JoinStudyDialog;
+import com.aware.phone.ui.dialogs.QuitStudyDialog;
 import com.aware.ui.PermissionsHandler;
 import com.aware.utils.Https;
 import com.aware.utils.SSLManager;
 
 import java.io.FileNotFoundException;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.PermissionChecker;
 
 /**
- * @author df
+ *
  */
-public class Aware_Client extends Aware_Activity implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class Aware_Light_Activity extends Aware_Activity {
 
     public static boolean permissions_ok;
     private static Hashtable<Integer, Boolean> listSensorType;
@@ -59,11 +81,45 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Android 8 specific: create a notification channel for AWARE
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationManager not_manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            NotificationChannel aware_channel = new NotificationChannel(Aware.AWARE_NOTIFICATION_ID, getResources().getString(R.string.app_name), NotificationManager.IMPORTANCE_DEFAULT);
+            aware_channel.setDescription(getResources().getString(R.string.aware_description));
+            aware_channel.enableLights(true);
+            aware_channel.setLightColor(Color.BLUE);
+            aware_channel.enableVibration(true);
+            not_manager.createNotificationChannel(aware_channel);
+        }
+
         prefs = getSharedPreferences("com.aware.phone", Context.MODE_PRIVATE);
-        addPreferencesFromResource(R.xml.aware_preferences);
 
-        setContentView(R.layout.aware_ui);
+        // Initialize views
+        setContentView(R.layout.activity_aware_light);
+        Button btnJoinStudy = findViewById(R.id.btn_join_study);
+        Button btnQuitStudy = findViewById(R.id.btn_quit_study);
+        btnJoinStudy.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new JoinStudyDialog(Aware_Light_Activity.this).showDialog();
+            }
+        });
+        btnQuitStudy.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new QuitStudyDialog(Aware_Light_Activity.this).showDialog();
+            }
+        });
 
+        if (Aware.isStudy(getApplicationContext())) {
+            addPreferencesFromResource(R.xml.pref_aware_light);
+            btnQuitStudy.setVisibility(View.VISIBLE);
+        } else {
+            addPreferencesFromResource(R.xml.pref_aware_device);
+            btnQuitStudy.setVisibility(View.GONE);
+        }
+
+        // Initialize and check optional sensors and required permissions before starting AWARE service
         optionalSensors.put(Aware_Preferences.STATUS_ACCELEROMETER, Sensor.TYPE_ACCELEROMETER);
         optionalSensors.put(Aware_Preferences.STATUS_SIGNIFICANT_MOTION, Sensor.TYPE_ACCELEROMETER);
         optionalSensors.put(Aware_Preferences.STATUS_BAROMETER, Sensor.TYPE_PRESSURE);
@@ -85,6 +141,7 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
 
         REQUIRED_PERMISSIONS.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_WIFI_STATE);
+
         REQUIRED_PERMISSIONS.add(Manifest.permission.CAMERA);
         REQUIRED_PERMISSIONS.add(Manifest.permission.BLUETOOTH);
         REQUIRED_PERMISSIONS.add(Manifest.permission.BLUETOOTH_ADMIN);
@@ -202,10 +259,6 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
                 CheckBoxPreference check = (CheckBoxPreference) findPreference(pref.getKey());
                 check.setChecked(Aware.getSetting(getApplicationContext(), pref.getKey()).equals("true"));
                 if (check.isChecked()) {
-                    if (pref.getKey().equalsIgnoreCase(Aware_Preferences.AWARE_DONATE_USAGE)) {
-                        Toast.makeText(getApplicationContext(), "Thanks!", Toast.LENGTH_SHORT).show();
-                        new AsyncPing().execute();
-                    }
                     if (pref.getKey().equalsIgnoreCase(Aware_Preferences.STATUS_WEBSERVICE)) {
                         if (Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER).length() == 0) {
                             Toast.makeText(getApplicationContext(), "Study URL missing...", Toast.LENGTH_SHORT).show();
@@ -311,7 +364,7 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
         } else {
 
             if (prefs.getAll().isEmpty() && Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID).length() == 0) {
-                PreferenceManager.setDefaultValues(getApplicationContext(), "com.aware.phone", Context.MODE_PRIVATE, com.aware.R.xml.aware_preferences, true);
+                PreferenceManager.setDefaultValues(getApplicationContext(), "com.aware.phone", Context.MODE_PRIVATE, R.xml.aware_preferences, true);
                 prefs.edit().commit();
             } else {
                 PreferenceManager.setDefaultValues(getApplicationContext(), "com.aware.phone", Context.MODE_PRIVATE, R.xml.aware_preferences, false);
@@ -337,7 +390,7 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
             for (String optionalSensor : keys) {
                 Preference pref = findPreference(optionalSensor);
                 PreferenceGroup parent = getPreferenceParent(pref);
-                if (pref.getKey().equalsIgnoreCase(optionalSensor) && !listSensorType.containsKey(optionalSensors.get(optionalSensor)))
+                if (pref != null && parent != null && pref.getKey().equalsIgnoreCase(optionalSensor) && !listSensorType.containsKey(optionalSensors.get(optionalSensor)))
                     parent.setEnabled(false);
             }
 
@@ -357,7 +410,7 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
             //Aware.isBatteryOptimizationIgnored(this, getPackageName());
 
             prefs.registerOnSharedPreferenceChangeListener(this);
-            
+
             new SettingsSync().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, //use all cores available to process UI faster
                     findPreference(Aware_Preferences.DEVICE_ID),
                     findPreference(Aware_Preferences.DEVICE_LABEL),
@@ -417,16 +470,6 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
                     findPreference(Aware_Preferences.STATUS_TOUCH)
             );
         }
-
-        // TODO RIO: Use simpler activity UI
-//        if (Aware.isStudy(this)) {
-//            if (Aware.getSetting(this, Aware_Preferences.INTERFACE_LOCKED).equals("true") ||
-//                    Aware.getSetting(this, "ui_mode").equals("1") || Aware.getSetting(this, "ui_mode").equals("2")
-//            ) {
-//                finish();
-//                startActivity(new Intent(this, Aware_Participant.class));
-//            }
-//        }
     }
 
     @Override
@@ -439,37 +482,5 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(packageMonitor);
-    }
-
-    private class AsyncPing extends AsyncTask<Void, Void, Boolean> {
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            // Download the certificate, and block since we are already running in background
-            // and we need the certificate immediately.
-            SSLManager.handleUrl(getApplicationContext(), "https://api.awareframework.com/index.php", true);
-
-            //Ping AWARE's server with getApplicationContext() device's information for framework's statistics log
-            Hashtable<String, String> device_ping = new Hashtable<>();
-            device_ping.put(Aware_Preferences.DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
-            device_ping.put("ping", String.valueOf(System.currentTimeMillis()));
-            device_ping.put("platform", "android");
-            try {
-                PackageInfo package_info = getApplicationContext().getPackageManager().getPackageInfo(getApplicationContext().getPackageName(), 0);
-                device_ping.put("package_name", package_info.packageName);
-                if (package_info.packageName.equals("com.aware.phone")) {
-                    device_ping.put("package_version_code", String.valueOf(package_info.versionCode));
-                    device_ping.put("package_version_name", String.valueOf(package_info.versionName));
-                }
-            } catch (PackageManager.NameNotFoundException e) {
-            }
-
-            // TODO RIO: Replace POST to webserver
-            try {
-                new Https(SSLManager.getHTTPS(getApplicationContext(), "https://api.awareframework.com/index.php")).dataPOST("https://api.awareframework.com/index.php/awaredev/alive", device_ping, true);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-            return true;
-        }
     }
 }
