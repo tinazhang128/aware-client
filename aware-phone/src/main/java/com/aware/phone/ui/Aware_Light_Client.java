@@ -1,10 +1,7 @@
 package com.aware.phone.ui;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Dialog;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -12,7 +9,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -22,17 +18,16 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
+import android.preference.PreferenceCategory;
 import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -42,15 +37,12 @@ import android.widget.Toast;
 import com.aware.Applications;
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
-import com.aware.phone.Aware_Client;
 import com.aware.phone.R;
 import com.aware.phone.ui.dialogs.JoinStudyDialog;
 import com.aware.phone.ui.dialogs.QuitStudyDialog;
+import com.aware.phone.ui.prefs.QuitStudyPref;
 import com.aware.ui.PermissionsHandler;
-import com.aware.utils.Https;
-import com.aware.utils.SSLManager;
 
-import java.io.FileNotFoundException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -63,10 +55,12 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.PermissionChecker;
 
+import static com.aware.Aware.TAG;
+
 /**
  *
  */
-public class Aware_Light_Activity extends Aware_Activity {
+public class Aware_Light_Client extends Aware_Activity {
 
     public static boolean permissions_ok;
     private static Hashtable<Integer, Boolean> listSensorType;
@@ -74,6 +68,7 @@ public class Aware_Light_Activity extends Aware_Activity {
 
     private static final ArrayList<String> REQUIRED_PERMISSIONS = new ArrayList<>();
     private static final Hashtable<String, Integer> optionalSensors = new Hashtable<>();
+//    private static final
 
     private final Aware.AndroidPackageMonitor packageMonitor = new Aware.AndroidPackageMonitor();
 
@@ -81,43 +76,19 @@ public class Aware_Light_Activity extends Aware_Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Android 8 specific: create a notification channel for AWARE
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationManager not_manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            NotificationChannel aware_channel = new NotificationChannel(Aware.AWARE_NOTIFICATION_ID, getResources().getString(R.string.app_name), NotificationManager.IMPORTANCE_DEFAULT);
-            aware_channel.setDescription(getResources().getString(R.string.aware_description));
-            aware_channel.enableLights(true);
-            aware_channel.setLightColor(Color.BLUE);
-            aware_channel.enableVibration(true);
-            not_manager.createNotificationChannel(aware_channel);
-        }
-
         prefs = getSharedPreferences("com.aware.phone", Context.MODE_PRIVATE);
+
+        // TODO RIO: Remove this later
+        Log.i(TAG, "DB HOST: " + Aware.getSetting(Aware_Light_Client.this, Aware_Preferences.DB_HOST));
 
         // Initialize views
         setContentView(R.layout.activity_aware_light);
-        Button btnJoinStudy = findViewById(R.id.btn_join_study);
-        Button btnQuitStudy = findViewById(R.id.btn_quit_study);
-        btnJoinStudy.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                new JoinStudyDialog(Aware_Light_Activity.this).showDialog();
-            }
-        });
-        btnQuitStudy.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                new QuitStudyDialog(Aware_Light_Activity.this).showDialog();
-            }
-        });
-
         if (Aware.isStudy(getApplicationContext())) {
             addPreferencesFromResource(R.xml.pref_aware_light);
-            btnQuitStudy.setVisibility(View.VISIBLE);
         } else {
             addPreferencesFromResource(R.xml.pref_aware_device);
-            btnQuitStudy.setVisibility(View.GONE);
         }
+//        hideUnusedPreferences();
 
         // Initialize and check optional sensors and required permissions before starting AWARE service
         optionalSensors.put(Aware_Preferences.STATUS_ACCELEROMETER, Sensor.TYPE_ACCELEROMETER);
@@ -255,6 +226,9 @@ public class Aware_Light_Activity extends Aware_Activity {
 
             Preference pref = values[0];
 
+            if (pref != null) Log.i(TAG, "Syncing pref with key: " + pref.getKey());
+            if (getPreferenceParent(pref) == null) return;
+
             if (CheckBoxPreference.class.isInstance(pref)) {
                 CheckBoxPreference check = (CheckBoxPreference) findPreference(pref.getKey());
                 check.setChecked(Aware.getSetting(getApplicationContext(), pref.getKey()).equals("true"));
@@ -306,7 +280,10 @@ public class Aware_Light_Activity extends Aware_Activity {
                         }
                     }
                 }
+
+                // Only show sensor if it is active
                 if (is_active) {
+                    if (pref != null) Log.i(TAG, "Pref with key: " + pref.getKey() + " is active!");
                     try {
                         Class res = R.drawable.class;
                         Field field = res.getField("ic_action_" + parent.getKey());
@@ -320,18 +297,8 @@ public class Aware_Light_Activity extends Aware_Activity {
                     } catch (NoSuchFieldException | IllegalAccessException e) {
                     }
                 } else {
-                    try {
-                        Class res = R.drawable.class;
-                        Field field = res.getField("ic_action_" + parent.getKey());
-                        int icon_id = field.getInt(null);
-                        Drawable category_icon = ContextCompat.getDrawable(getApplicationContext(), icon_id);
-                        if (category_icon != null) {
-                            category_icon.clearColorFilter();
-                            parent.setIcon(category_icon);
-                            onContentChanged();
-                        }
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                    }
+                    PreferenceCategory rootSensorPref = (PreferenceCategory) getPreferenceParent(parent);
+                    rootSensorPref.removePreference(parent);
                 }
             }
         }
@@ -353,7 +320,7 @@ public class Aware_Light_Activity extends Aware_Activity {
         }
 
         if (!permissions_ok) {
-            Log.d(Aware.TAG, "Requesting permissions...");
+            Log.d(TAG, "Requesting permissions...");
 
             Intent permissionsHandler = new Intent(this, PermissionsHandler.class);
             permissionsHandler.putStringArrayListExtra(PermissionsHandler.EXTRA_REQUIRED_PERMISSIONS, REQUIRED_PERMISSIONS);
@@ -383,7 +350,7 @@ public class Aware_Light_Activity extends Aware_Activity {
             }
 
             if (Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER).length() == 0) {
-                Aware.setSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER, "https://api.awareframework.com/index.php");
+                Aware.setSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER, "http://api.awareframework.com/index.php");
             }
 
             Set<String> keys = optionalSensors.keySet();
@@ -482,5 +449,13 @@ public class Aware_Light_Activity extends Aware_Activity {
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(packageMonitor);
+    }
+
+    private void hideUnusedPreferences() {
+        Preference dataExchangePref = findPreference("data_exchange");
+        if (dataExchangePref != null) {
+            PreferenceScreen rootSensorPref = (PreferenceScreen) getPreferenceParent(dataExchangePref);
+            rootSensorPref.removePreference(dataExchangePref);
+        }
     }
 }

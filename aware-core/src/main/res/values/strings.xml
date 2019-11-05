@@ -27,7 +27,8 @@
     <string name="aware_study">Study</string>
     <string name="aware_esm_other">Other</string>
     <string name="aware_esm_other_follow">Can you be more specific, please?</string>
-    <string name="plugins_required">Plugins needed (install to join)</string>
+    <string name="plugins_required">Plugins needed</string>
+    <string name="sensors_required">Sensors needed</string>
     <string name="join_study">Join a study</string>
     <string name="quit_study">Quit study</string>
     <string name="sign_up">Sign Up!</string>

@@ -8,7 +8,7 @@
         android:theme="@style/Theme.Aware">
         <!-- Activities -->
         <activity
-            android:name=".ui.Aware_Light_Activity"
+            android:name=".ui.Aware_Light_Client"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:exported="true"
             android:icon="@drawable/ic_launcher_aware"
@@ -30,6 +30,12 @@
             android:label="AWARE"
             android:launchMode="singleTop"
             android:theme="@style/Theme.Aware">
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+
+<!--                <category android:name="android.intent.category.DEFAULT" />-->
+<!--                <category android:name="android.intent.category.LAUNCHER" />-->
+<!--            </intent-filter>-->
         </activity>
         <activity
             android:name=".ui.Stream_UI"

@@ -47,7 +47,6 @@ public class JoinStudyDialog extends DialogFragment {
                 .setPositiveButton("Join", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         EditText etStudyConfigUrl = dialogView.findViewById(R.id.et_join_study_url);
-                        etStudyConfigUrl.setText("https://drive.google.com/file/d/1sejHjxRKUnjTN6vYXgSe6R4OIXUHVRMq");  // TODO RIO: Remove this later
 //                        validateStudyConfig(etStudyConfigUrl.getText().toString());
                         new ValidateStudyConfig().execute(etStudyConfigUrl.getText().toString());
                     }
@@ -88,7 +87,7 @@ public class JoinStudyDialog extends DialogFragment {
                 studyConfig = AwareUtil.getStudyConfig(url);
                 JoinStudyDialog.this.dismiss();
 
-                if (studyConfig == null || !AwareUtil.validateStudyConfig(studyConfig)) {
+                if (studyConfig == null || !AwareUtil.validateStudyConfig(mActivity, studyConfig)) {
                     Log.d(TAG, "Failed to join study with URL: " + url);
                 } else {
                     return studyConfig.toString();
@@ -115,45 +114,6 @@ public class JoinStudyDialog extends DialogFragment {
                 studyInfo.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                 mActivity.startActivity(studyInfo);
             }
-        }
-    }
-
-    private void validateStudyConfig(String url) {
-        ProgressDialog loader = new ProgressDialog(mActivity);
-        loader.setTitle(R.string.loading_join_study_title);
-        loader.setMessage(getResources().getString(R.string.loading_join_study_msg));
-        loader.setCancelable(true);
-        loader.setIndeterminate(true);
-        loader.show();
-
-        Log.i(TAG, "Joining study with URL " + url);
-
-        try {
-            mProgressBar = new ProgressBar(mActivity);
-            JSONObject studyConfig = AwareUtil.getStudyConfig(url);
-            loader.dismiss();
-            JoinStudyDialog.this.dismiss();
-
-            if (studyConfig == null || !AwareUtil.validateStudyConfig(studyConfig)) {
-                Log.d(TAG, "Failed to join study with URL: " + url);
-                Toast.makeText(mActivity, "Invalid study config. Please contact the " +
-                                "administrator of this study or enter a different study URL.",
-                        Toast.LENGTH_LONG).show();
-                return;
-            }
-
-            Intent studyInfo = new Intent(mActivity, Aware_Join_Study.class);
-            studyInfo.putExtra(Aware_Join_Study.EXTRA_STUDY_URL, url);
-            studyInfo.putExtra(Aware_Join_Study.EXTRA_STUDY_CONFIG, studyConfig.toString());
-            studyInfo.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(studyInfo);
-        } catch (JSONException e) {
-            Log.d(TAG, "Failed to join study with URL: " + url + ", reason: " + e.getMessage());
-            Toast.makeText(mActivity, "Invalid study config. Please contact the " +
-                            "administrator of this study or enter a different study URL.",
-                    Toast.LENGTH_LONG).show();
-            loader.dismiss();
-            JoinStudyDialog.this.dismiss();
         }
     }
 }

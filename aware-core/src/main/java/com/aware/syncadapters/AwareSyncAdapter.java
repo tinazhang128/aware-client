@@ -31,6 +31,7 @@ import org.json.JSONObject;
 import java.io.FileNotFoundException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Hashtable;
 
@@ -85,6 +86,7 @@ public class AwareSyncAdapter extends AbstractThreadedSyncAdapter {
      */
     @Override
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
+        Log.i(Aware.TAG, "Performing sync for " + Arrays.toString(DATABASE_TABLES));
         
         if (!Aware.getSetting(mContext, Aware_Preferences.WEBSERVICE_SILENT).equals("true"))
             notManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -198,7 +200,8 @@ public class AwareSyncAdapter extends AbstractThreadedSyncAdapter {
         String device_id = Aware.getSetting(context, Aware_Preferences.DEVICE_ID);
         boolean DEBUG = Aware.getSetting(context, Aware_Preferences.DEBUG_FLAG).equals("true");
 
-        String response = createRemoteTable(device_id, table_fields, web_service_simple, protocol, context, web_server, database_table);
+        // TODO RIO: Remove this
+//        String response = createRemoteTable(device_id, table_fields, web_service_simple, protocol, context, web_server, database_table);
         try {
             String[] columnsStr = getTableColumnsNames(CONTENT_URI, context);
 
@@ -219,7 +222,7 @@ public class AwareSyncAdapter extends AbstractThreadedSyncAdapter {
                     return;
                 }
 
-                Log.d(Aware.TAG, "Table: " + database_table + " exists: " + (response != null && response.length() == 0));
+//                Log.d(Aware.TAG, "Table: " + database_table + " exists: " + (response != null && response.length() == 0));
                 Log.d(Aware.TAG, "Last synced record in this table: " + latest);
                 Log.d(Aware.TAG, "Joined study since: " + study_condition);
                 Log.d(Aware.TAG, "Rows remaining to sync: " + total_records);
@@ -372,7 +375,7 @@ public class AwareSyncAdapter extends AbstractThreadedSyncAdapter {
         return false;
     }
 
-    // TODO RIO: Remove this function as tables will be created during database initialization
+    // TODO: Remove this function as tables will be created during database initialization
     private String createRemoteTable(String DEVICE_ID, String TABLES_FIELDS, Boolean WEBSERVICE_SIMPLE, String protocol, Context mContext, String WEBSERVER, String DATABASE_TABLE) {
         //Check first if we have database table remotely, otherwise create it!
         Hashtable<String, String> fields = new Hashtable<>();
@@ -643,7 +646,7 @@ public class AwareSyncAdapter extends AbstractThreadedSyncAdapter {
             request.put(Aware_Preferences.DEVICE_ID, DEVICE_ID);
             request.put("data", rows.toString());
 
-            boolean dataInserted = Jdbc.insertData(DATABASE_TABLE, rows);
+            boolean dataInserted = Jdbc.insertData(mContext, DATABASE_TABLE, rows);
 
             //Something went wrong, e.g., server is down, lost internet, etc.
             if (!dataInserted) {

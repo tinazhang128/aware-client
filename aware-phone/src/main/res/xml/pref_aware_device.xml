@@ -23,4 +23,11 @@
             android:summary="%s"
             android:title="AWARE version" />
     </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="study_actions"
+        android:title="">
+        <com.aware.phone.ui.prefs.JoinStudyPref
+            android:key="study_join_button" />
+    </PreferenceCategory>
 </PreferenceScreen>

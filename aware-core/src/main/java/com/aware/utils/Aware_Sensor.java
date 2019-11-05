@@ -106,7 +106,7 @@ public class Aware_Sensor extends Service {
             startActivity(permissions);
         } else {
             PERMISSIONS_OK = true;
-            if (Aware.getSetting(this, Aware_Preferences.STATUS_WEBSERVICE).equals("true")) {
+            if (Aware.getSetting(this, Aware_Preferences.STATUS_WEBSERVICE).equals("true") && Aware.getSetting(this, Aware_Preferences.WEBSERVICE_SERVER).contains("https")) {
                 downloadCertificate(this);
             }
             //Aware.debug(this, "active: " + getClass().getName() + " package: " + getPackageName());

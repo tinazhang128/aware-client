@@ -11,6 +11,7 @@
         android:layout_marginLeft="16dp"
         android:layout_marginRight="16dp"
         android:layout_marginBottom="16dp"
+        android:text="http://10.4.138.50:8000/study-config%20(19).json"
         android:autofillHints="Enter URL to join study" />
 
 </LinearLayout>

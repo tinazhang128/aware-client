@@ -181,7 +181,7 @@ public class StudyUtils extends IntentService {
 
                 if (dbStudy != null && !dbStudy.isClosed()) dbStudy.close();
 
-                applySettings(getApplicationContext(), study_config);
+                applySettings(getApplicationContext(), full_url, study_config);
 
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -198,6 +198,19 @@ public class StudyUtils extends IntentService {
      * @param configs
      */
     public static void applySettings(Context context, JSONArray configs) {
+        applySettings(context, Aware.getSetting(context, Aware_Preferences.WEBSERVICE_SERVER), configs);
+    }
+
+    /**
+     * Sets first all the settings to the client.
+     * If there are plugins, apply the same settings to them.
+     * This allows us to add plugins to studies from the dashboard.
+     *
+     * @param context
+     * @param webserviceServer
+     * @param configs
+     */
+    public static void applySettings(Context context, String webserviceServer, JSONArray configs) {
 
         boolean is_developer = Aware.getSetting(context, Aware_Preferences.DEBUG_FLAG).equals("true");
 
@@ -207,6 +220,22 @@ public class StudyUtils extends IntentService {
         if (is_developer) Aware.setSetting(context, Aware_Preferences.DEBUG_FLAG, true);
 
         //Now apply the new settings
+        try {
+            Aware.setSetting(context, Aware_Preferences.WEBSERVICE_SERVER, webserviceServer);
+            JSONObject dbConfig = configs.getJSONObject(0).getJSONObject("database");
+
+            String host = Aware.getSetting(context, Aware_Preferences.DB_HOST);
+            Aware.setSetting(context, Aware_Preferences.DB_HOST, dbConfig.getString("database_host"));
+            String host2 = Aware.getSetting(context, Aware_Preferences.DB_HOST);
+
+            Aware.setSetting(context, Aware_Preferences.DB_PORT, dbConfig.getInt("database_port"));
+            Aware.setSetting(context, Aware_Preferences.DB_NAME, dbConfig.getString("database_name"));
+            Aware.setSetting(context, Aware_Preferences.DB_USERNAME, dbConfig.getString("database_username"));
+            Aware.setSetting(context, Aware_Preferences.DB_PASSWORD, dbConfig.getString("database_password"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
         JSONArray plugins = new JSONArray();
         JSONArray sensors = new JSONArray();
         JSONArray schedulers = new JSONArray();
@@ -220,8 +249,8 @@ public class StudyUtils extends IntentService {
                 if (element.has("sensors")) {
                     sensors = element.getJSONArray("sensors");
                 }
-                if (element.has("schedulers")) {
-                    schedulers = element.getJSONArray("schedulers");
+                if (element.has("schedules")) {
+                    schedulers = element.getJSONArray("schedules");
                 }
             } catch (JSONException e) {
                 e.printStackTrace();

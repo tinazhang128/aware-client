@@ -22,12 +22,12 @@
             android:selectable="false"
             android:summary="%s"
             android:title="AWARE version" />
-        <CheckBoxPreference
-            android:defaultValue="false"
-            android:key="aware_donate_usage"
-            android:persistent="true"
-            android:summary="Used for diagnostics and analytics (e.g., server demand)"
-            android:title="Ping AWARE server" />
+<!--        <CheckBoxPreference-->
+<!--            android:defaultValue="false"-->
+<!--            android:key="aware_donate_usage"-->
+<!--            android:persistent="true"-->
+<!--            android:summary="Used for diagnostics and analytics (e.g., server demand)"-->
+<!--            android:title="Ping AWARE server" />-->
     </PreferenceCategory>
     <PreferenceCategory
         android:key="sensors"
@@ -825,13 +825,13 @@
             android:title="AWARE Study">
 
             <CheckBoxPreference
-                android:defaultValue="true"
+                android:defaultValue="false"
                 android:key="status_webservice"
                 android:persistent="true"
                 android:title="Active" />
 
             <EditTextPreference
-                android:defaultValue="https://api.awareframework.com/index.php"
+                android:defaultValue="http://api.awareframework.com/index.php"
                 android:key="webservice_server"
                 android:persistent="true"
                 android:summary="URL"
@@ -901,67 +901,67 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-        android:key="advanced_settings"
-        android:summary="Advanced"
-        android:title="Advanced">
-        <PreferenceScreen
-            android:key="advanced"
-            android:summary="For advanced users and developers"
-            android:title="Advanced options">
+    android:key="advanced_settings"
+    android:summary="Advanced"
+    android:title="Advanced">
+    <PreferenceScreen
+        android:key="advanced"
+        android:summary="For advanced users and developers"
+        android:title="Advanced options">
 
-            <CheckBoxPreference
-                android:defaultValue="true"
-                android:key="debug_flag"
-                android:persistent="true"
-                android:summary="Show messages in logcat"
-                android:title="Debugging" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="debug_flag"
+            android:persistent="true"
+            android:summary="Show messages in logcat"
+            android:title="Debugging" />
 
-            <EditTextPreference
-                android:defaultValue="AWARE"
-                android:dependency="debug_flag"
-                android:key="debug_tag"
-                android:persistent="true"
-                android:summary="Change logcat tag for debug filters (default = AWARE)"
-                android:title="Logcat TAG" />
+        <EditTextPreference
+            android:defaultValue="AWARE"
+            android:dependency="debug_flag"
+            android:key="debug_tag"
+            android:persistent="true"
+            android:summary="Change logcat tag for debug filters (default = AWARE)"
+            android:title="Logcat TAG" />
 
-            <CheckBoxPreference
-                android:defaultValue="false"
-                android:key="debug_db_slow"
-                android:persistent="true"
-                android:summary="Disable database logs for high-frequency sensors"
-                android:title="Lightweight sampling" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="debug_db_slow"
+            android:persistent="true"
+            android:summary="Disable database logs for high-frequency sensors"
+            android:title="Lightweight sampling" />
 
-            <CheckBoxPreference
-                android:defaultValue="false"
-                android:key="webservice_simple"
-                android:persistent="true"
-                android:summary="Disable database metadata sync to server"
-                android:title="Simple webservice" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="webservice_simple"
+            android:persistent="true"
+            android:summary="Disable database metadata sync to server"
+            android:title="Simple webservice" />
 
-            <CheckBoxPreference
-                android:defaultValue="false"
-                android:key="webservice_remove_data"
-                android:persistent="true"
-                android:summary="WARNING: This may cause problems with some sensors or plugins if they rely on history data (e.g., battery charges, discharges, ...)"
-                android:title="Wipe data on upload" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="webservice_remove_data"
+            android:persistent="true"
+            android:summary="WARNING: This may cause problems with some sensors or plugins if they rely on history data (e.g., battery charges, discharges, ...)"
+            android:title="Wipe data on upload" />
 
-            <CheckBoxPreference
-                android:defaultValue="false"
-                android:key="interface_locked"
-                android:persistent="true"
-                android:summary="Simplifies the interface for participants after joining a study"
-                android:title="Participant interface mode"
-                />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="interface_locked"
+            android:persistent="true"
+            android:summary="Simplifies the interface for participants after joining a study"
+            android:title="Participant interface mode"
+            />
 
-            <CheckBoxPreference
-                android:defaultValue="false"
-                android:key="frequency_enforce_all"
-                android:persistent="true"
-                android:summary="If Android gives points more often than the requested frequency, ignore them."
-                android:title="Enforce frequency of all sensors" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="frequency_enforce_all"
+            android:persistent="true"
+            android:summary="If Android gives points more often than the requested frequency, ignore them."
+            android:title="Enforce frequency of all sensors" />
 
-        </PreferenceScreen>
+    </PreferenceScreen>
 
-    </PreferenceCategory>
+</PreferenceCategory>
 
 </PreferenceScreen>

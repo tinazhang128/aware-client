@@ -12,17 +12,12 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.widget.EditText;
+import android.util.Log;
 import android.widget.ProgressBar;
 
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
-import com.aware.phone.Aware_Client;
-import com.aware.phone.R;
-import com.aware.phone.ui.Aware_Join_Study;
-import com.aware.phone.ui.Aware_Light_Activity;
+import com.aware.phone.ui.Aware_Light_Client;
 import com.aware.providers.Aware_Provider;
 
 
@@ -30,6 +25,7 @@ import com.aware.providers.Aware_Provider;
  * Manages dialog that is used to quit a study.
  */
 public class QuitStudyDialog extends DialogFragment {
+    private static final String TAG = "AWARE::QuitStudyDialog";
     private Activity mActivity;
     private ProgressBar mProgressBar;
 
@@ -40,7 +36,8 @@ public class QuitStudyDialog extends DialogFragment {
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(mActivity);
-        builder.setTitle("Are you sure you want to quit the study?")
+        builder.setTitle("Quit Study")
+                .setMessage("Are you sure you want to quit the study?")
                 .setCancelable(true)
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
@@ -95,25 +92,26 @@ public class QuitStudyDialog extends DialogFragment {
 
                         dialogInterface.dismiss();
                     }
-                })
-                .setOnDismissListener(new DialogInterface.OnDismissListener() {
-                    @Override
-                    public void onDismiss(DialogInterface dialogInterface) {
-                        //Sync to server the studies statuses
-                        Bundle sync = new Bundle();
-                        sync.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
-                        sync.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
-                        ContentResolver.requestSync(Aware.getAWAREAccount(mActivity), Aware_Provider.getAuthority(mActivity), sync);
-                    }
                 });
         return builder.create();
+    }
+
+    @Override
+    public void onDismiss(DialogInterface dialog) {
+        // Sync to server the studies statuses
+        Bundle sync = new Bundle();
+        sync.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        sync.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+        ContentResolver.requestSync(Aware.getAWAREAccount(mActivity), Aware_Provider.getAuthority(mActivity), sync);
     }
 
     /**
      * Store information on attempt to quit study and then show the dialog to confirm the quit.
      */
     public void showDialog() {
-        String study_url = "study url to quit"; // TODO RIO: Get real study url value
+        String study_url = Aware.getSetting(mActivity, Aware_Preferences.WEBSERVICE_SERVER);
+        Log.i(TAG, "Quitting from study with URL: " + study_url);
+
         Cursor dbStudy = Aware.getStudy(mActivity, study_url);
         if (dbStudy != null && dbStudy.moveToFirst()) {
             ContentValues complianceEntry = new ContentValues();
@@ -154,7 +152,7 @@ public class QuitStudyDialog extends DialogFragment {
                     mActivity.finish();
 
                     // Redirect the user to the main UI
-                    Intent mainUI = new Intent(mActivity, Aware_Light_Activity.class);
+                    Intent mainUI = new Intent(mActivity, Aware_Light_Client.class);
                     mainUI.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(mainUI);
                 }

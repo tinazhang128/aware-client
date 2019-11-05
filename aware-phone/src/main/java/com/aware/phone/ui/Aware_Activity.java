@@ -65,13 +65,11 @@ public abstract class Aware_Activity extends AppCompatPreferenceActivity {
                 item.setVisible(false);
             if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_team)) && Aware.is_watch(this))
                 item.setVisible(false);
-            if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_join_study_link)) && Aware.is_watch(this))
-                item.setVisible(false);
             if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_study)) && Aware.is_watch(this))
                 item.setVisible(false);
-            if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_sync)) && !Aware.getSetting(this, Aware_Preferences.STATUS_WEBSERVICE).equals("true"))
+            if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_sync)) && !Aware.isStudy(this))
                 item.setVisible(false);
-            if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_study)) && !Aware.getSetting(this, Aware_Preferences.STATUS_WEBSERVICE).equals("true"))
+            if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_study)) && !Aware.isStudy(this))
                 item.setVisible(false);
         }
         return true;
@@ -80,7 +78,7 @@ public abstract class Aware_Activity extends AppCompatPreferenceActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_qrcode))) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && PermissionChecker.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && PermissionChecker.checkSelfPermission(this, Manifest.permission.CAMERA) != PermissionChecker.PERMISSION_GRANTED) {
                 ArrayList<String> permission = new ArrayList<>();
                 permission.add(Manifest.permission.CAMERA);
 

@@ -1,7 +1,11 @@
 package com.aware.utils;
 
+import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
+
+import com.aware.Aware;
+import com.aware.Aware_Preferences;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -21,7 +25,7 @@ import java.util.List;
 public class Jdbc {
     private final static String TAG = "JDBC";
     private static Connection connection;
-    private static int transaction = 0;
+    private static int transactionCount = 0;
 
     private static class JdbcConnectionException extends Exception {
         private JdbcConnectionException(String message) {
@@ -32,21 +36,22 @@ public class Jdbc {
     /**
      * Inserts data into a remote database table.
      *
+     * @param context application context
      * @param table name of table to insert data into
      * @param rows list of the rows of data to insert
      * @return true if the data is inserted successfully, false otherwise
      */
-    public static boolean insertData(String table, JSONArray rows) {
+    public static boolean insertData(Context context, String table, JSONArray rows) {
         if (rows.length() == 0) return true;
 
-        Jdbc.transaction ++;
+        Jdbc.transactionCount++;
         try {
             List<String> fields = new ArrayList<>();
             Iterator<String> fieldIterator = rows.getJSONObject(0).keys();
             while (fieldIterator.hasNext()) {
                 fields.add(fieldIterator.next());
             }
-            Jdbc.insertBatch(table, fields, rows);
+            Jdbc.insertBatch(context, table, fields, rows);
         } catch (JSONException | SQLException | JdbcConnectionException e) {
             e.printStackTrace();
             return false;
@@ -55,14 +60,48 @@ public class Jdbc {
     }
 
     /**
-     * Establish a connection to the database of the currently joined study.
+     * Test if a connection to a database can be established.
+     * @param context application context
+     * @param host db host
+     * @param port db port
+     * @param name db name
+     * @param username db username
+     * @param password db password
+     * @return true if a connection was established, false otherwise.
      */
-    private static void connect() throws JdbcConnectionException {
-        String connectionUrl = "jdbc:mysql://10.4.137.127:3306/aware1?user=aware&password=password";  // TODO RIO: form connection URL
-//        String connectionUrl = String.format("jdbc:mysql://%s:%s/%s?user=%s&password=%s",
-//                Aware_Preferences.DB_HOST, Aware_Preferences.DB_PORT, Aware_Preferences.DB_NAME,
-//                Aware_Preferences.DB_USERNAME, Aware_Preferences.DB_PASSWORD);
+    public static boolean testConnection(Context context, String host, String port, String name, String username, String password) {
+        String connectionUrl = String.format("jdbc:mysql://%s:%s/%s?user=%s&password=%s",
+                host, port, name, username, password);
         Log.i(TAG, "Establishing connection to remote database...");
+
+        try {
+            Class.forName("com.mysql.jdbc.Driver").newInstance();
+            connection = DriverManager.getConnection(connectionUrl);
+            Log.i(TAG, "Connected to remote database...");
+            connection.close();
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to establish connection to database, reason: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Establish a connection to the database of the currently joined study.
+     * @param context application context
+     */
+    private static void connect(Context context) throws JdbcConnectionException {
+//        String connectionUrl = "jdbc:mysql://10.4.155.34:3306/aware1?user=aware&password=password";  // TODO RIO: form connection URL
+        String connectionUrl = String.format("jdbc:mysql://%s:%s/%s?user=%s&password=%s",
+                Aware.getSetting(context, Aware_Preferences.DB_HOST),
+                Aware.getSetting(context, Aware_Preferences.DB_PORT),
+                Aware.getSetting(context, Aware_Preferences.DB_NAME),
+                Aware.getSetting(context, Aware_Preferences.DB_USERNAME),
+                Aware.getSetting(context, Aware_Preferences.DB_PASSWORD));
+        Log.i(TAG, "Establishing connection to remote database...");
+
+        Log.i(TAG, "Connection url: " + connectionUrl); // todo rio: Remove this later
 
         try {
             Class.forName("com.mysql.jdbc.Driver").newInstance();
@@ -91,20 +130,21 @@ public class Jdbc {
     /**
      * Batch inserts data into a remote database table.
      *
+     * @param context application context
      * @param table name of table to batch insert data into
      * @param fields list of the table fields
      * @param rows list of the rows of data to insert
      * @throws JdbcConnectionException
      * @throws JSONException
      */
-    private static synchronized void insertBatch(String table, List<String> fields, JSONArray rows)
+    private static synchronized void insertBatch(Context context, String table, List<String> fields, JSONArray rows)
             throws JdbcConnectionException, JSONException, SQLException {
         try {
             if (Jdbc.connection == null || Jdbc.connection.isClosed()) {
-                connect();
+                connect(context);
             }
-            Log.i(TAG, "Inserting " + rows.length() + " row(s) of data into remote table '" +
-                    table + "'...");
+            Log.i(TAG, "# " + Jdbc.transactionCount + " Inserting " + rows.length() +
+                    " row(s) of data into remote table '" + table + "'...");
 
             List<Character> sqlParamPlaceholder = new ArrayList<>();
             for (int i = 0; i < fields.size(); i ++) sqlParamPlaceholder.add('?');
@@ -127,8 +167,8 @@ public class Jdbc {
             ps.executeBatch();
             Log.i(TAG, "Inserted " + rows.length() + " row(s) of data into remote table '" + table);
         } finally {
-            Jdbc.transaction --;
-            if (Jdbc.transaction == 0) disconnect();
+            Jdbc.transactionCount--;
+            if (Jdbc.transactionCount == 0) disconnect();
         }
     }
 }

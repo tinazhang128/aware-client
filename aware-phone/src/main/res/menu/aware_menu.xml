@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <item
-        android:id="@+id/aware_study_info"
-        android:icon="@drawable/ic_action_aware_studies"
-        android:title="Study"
-        app:showAsAction="always" />
+<!--    <item-->
+<!--        android:id="@+id/aware_study_info"-->
+<!--        android:icon="@drawable/ic_action_aware_studies"-->
+<!--        android:title="Study"-->
+<!--        app:showAsAction="always" />-->
     <item
         android:id="@+id/aware_sync"
         android:icon="@drawable/ic_action_webservice_sync"

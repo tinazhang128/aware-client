@@ -140,7 +140,7 @@ public class Aware_QRCode extends Aware_Activity implements ZBarScannerView.Resu
                 study_api_key = path_segments.get(path_segments.size() - 1);
                 study_id = path_segments.get(path_segments.size() - 2);
 
-                // TODO RIO: Replace GET to webserver a GET to study config URL
+                // TODO: Replace GET to webserver a GET to study config URL
                 String request;
                 if (protocol.equals("https")) {
                     //Note: Joining a study always downloads the certificate.
@@ -180,7 +180,7 @@ public class Aware_QRCode extends Aware_Activity implements ZBarScannerView.Resu
                             e.printStackTrace();
                         }
 
-                        // TODO RIO: Replace POST to webserver with DB insert
+                        // TODO: Replace POST to webserver with DB insert
                         // This is where the study config is obtained
                         String answer;
                         if (protocol.equals("https")) {

@@ -4,92 +4,126 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_margin="5dp"
         android:layout_weight="1"
         android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:layout_weight="1"
+            android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/txt_title"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Study Name"
-                android:textSize="18dp"
-                android:textStyle="bold" />
+                android:layout_margin="5dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <ScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="5dp">
-
-                <LinearLayout
+                <TextView
+                    android:id="@+id/txt_title"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
+                    android:layout_height="wrap_content"
+                    android:text="Study Name"
+                    android:textSize="18dp"
+                    android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/txt_description"
+<!--                <LinearLayout-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:padding="5dp">-->
+
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Description" />
+                        android:orientation="vertical"
+                        android:padding="5dp">
 
-                    <TextView
-                        android:id="@+id/txt_researcher"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="15dp"
-                        android:text="Researcher" />
-                    <TextView
-                            android:text="Onboarding"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" android:id="@+id/textView" android:textStyle="bold"
-                            android:layout_marginTop="15dp"/>
-                    <EditText
+                        <TextView
+                            android:id="@+id/txt_description"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:ems="10"
-                            android:id="@+id/participant_label"
-                            android:inputType="textEmailAddress" android:hint="Your email address"/>
-                </LinearLayout>
-            </ScrollView>
-        </LinearLayout>
+                            android:text="Description" />
 
-        <LinearLayout
-            android:id="@+id/ll_plugins_required"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_margin="5dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/txt_researcher"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="15dp"
+                            android:text="Researcher" />
+                        <TextView
+                                android:text="Onboarding"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content" android:id="@+id/textView" android:textStyle="bold"
+                                android:layout_marginTop="15dp"/>
+                        <EditText
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:ems="10"
+                                android:id="@+id/participant_label"
+                                android:inputType="textEmailAddress" android:hint="Your email address"/>
+                    </LinearLayout>
+<!--                </LinearLayout>-->
+            </LinearLayout>
 
-            <TextView
+            <LinearLayout
+                android:id="@+id/ll_sensors_required"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/plugins_required"
-                android:textSize="16dp"
-                android:textStyle="bold" />
+                android:layout_margin="5dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_plugins"
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/sensors_required"
+                    android:textSize="16dp"
+                    android:textStyle="bold" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_sensors"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_vertical"
+                    android:padding="5dp">
+<!--                    android:scrollbars="vertical">-->
+
+                </androidx.recyclerview.widget.RecyclerView>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/ll_plugins_required"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_gravity="center_vertical"
-                android:padding="5dp"
-                android:scrollbars="vertical">
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            </androidx.recyclerview.widget.RecyclerView>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/plugins_required"
+                    android:textSize="16dp"
+                    android:textStyle="bold" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_plugins"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_vertical"
+                    android:padding="5dp">
+<!--                    android:scrollbars="vertical">-->
+
+                </androidx.recyclerview.widget.RecyclerView>
+            </LinearLayout>
+
         </LinearLayout>
 
-    </LinearLayout>
+    </ScrollView>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -123,9 +157,9 @@
             android:textColor="@android:color/white" />
     </LinearLayout>
 
-    <include
-        android:id="@+id/aware_bottombar"
-        layout="@layout/aware_controller" />
+<!--    <include-->
+<!--        android:id="@+id/aware_bottombar"-->
+<!--        layout="@layout/aware_controller" />-->
 
     <ListView android:id="@android:id/list"
         android:layout_width="wrap_content"

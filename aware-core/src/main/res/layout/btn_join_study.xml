@@ -12,14 +12,5 @@
         android:text="@string/join_study"
         android:textColor="@android:color/white"
         android:layout_margin="5dp"/>
-    <Button
-        android:id="@+id/btn_quit_study"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@android:id/list"
-        android:background="@android:color/holo_red_light"
-        android:text="@string/quit_study"
-        android:textColor="@android:color/white"
-        android:layout_margin="5dp"/>
 
 </LinearLayout>

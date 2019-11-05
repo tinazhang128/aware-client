@@ -405,7 +405,7 @@ public class Aware extends Service {
         }
     }
 
-    // TODO RIO: Replace POST to webserver
+    // TODO: Remove this function
     private class AsyncPing extends AsyncTask<Void, Void, Boolean> {
         @Override
         protected Boolean doInBackground(Void... params) {
@@ -479,7 +479,7 @@ public class Aware extends Service {
         return is_ignored;
     }
 
-    // TODO RIO: Replace POST to webserver
+    // TODO: Replace POST to webserver
     private class AsyncStudyCheck extends AsyncTask<Void, Void, Boolean> {
 
         @Override
@@ -494,12 +494,13 @@ public class Aware extends Service {
                 String webserver = Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER);
                 String protocol = webserver.substring(0, webserver.indexOf(":"));
 
-                String study_status;
-                if (protocol.equalsIgnoreCase("https")) {
-                    study_status = new Https(SSLManager.getHTTPS(getApplicationContext(), Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER))).dataPOST(Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER), studyCheck, true);
-                } else {
-                    study_status = new Http().dataPOST(Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER), studyCheck, true);
-                }
+                String study_status = null;
+//                String study_status;
+//                if (protocol.equalsIgnoreCase("https")) {
+//                    study_status = new Https(SSLManager.getHTTPS(getApplicationContext(), Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER))).dataPOST(Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER), studyCheck, true);
+//                } else {
+//                    study_status = new Http().dataPOST(Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER), studyCheck, true);
+//                }
 
                 if (study_status == null)
                     return true; //unable to connect to server, timeout, etc. We do nothing.
@@ -528,7 +529,8 @@ public class Aware extends Service {
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-            } catch (FileNotFoundException e) {
+            } catch (Exception e) {
+//            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
             return true;

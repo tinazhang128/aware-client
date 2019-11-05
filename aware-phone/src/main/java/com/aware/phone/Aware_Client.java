@@ -207,14 +207,14 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
                         new AsyncPing().execute();
                     }
                     if (pref.getKey().equalsIgnoreCase(Aware_Preferences.STATUS_WEBSERVICE)) {
-                        if (Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER).length() == 0) {
-                            Toast.makeText(getApplicationContext(), "Study URL missing...", Toast.LENGTH_SHORT).show();
-                        } else if (!Aware.isStudy(getApplicationContext())) {
-                            //Shows UI to allow the user to join study
-                            Intent joinStudy = new Intent(getApplicationContext(), Aware_Join_Study.class);
-                            joinStudy.putExtra(Aware_Join_Study.EXTRA_STUDY_URL, Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER));
-                            startActivity(joinStudy);
-                        }
+//                        if (Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER).length() == 0) {
+//                            Toast.makeText(getApplicationContext(), "Study URL missing...", Toast.LENGTH_SHORT).show();
+//                        } else if (!Aware.isStudy(getApplicationContext())) {
+//                            //Shows UI to allow the user to join study
+//                            Intent joinStudy = new Intent(getApplicationContext(), Aware_Join_Study.class);
+//                            joinStudy.putExtra(Aware_Join_Study.EXTRA_STUDY_URL, Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER));
+//                            startActivity(joinStudy);
+//                        }
                     }
                     if (pref.getKey().equalsIgnoreCase(Aware_Preferences.FOREGROUND_PRIORITY)) {
                         sendBroadcast(new Intent(Aware.ACTION_AWARE_PRIORITY_FOREGROUND));
@@ -418,15 +418,14 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
             );
         }
 
-        // TODO RIO: Use simpler activity UI
-//        if (Aware.isStudy(this)) {
-//            if (Aware.getSetting(this, Aware_Preferences.INTERFACE_LOCKED).equals("true") ||
-//                    Aware.getSetting(this, "ui_mode").equals("1") || Aware.getSetting(this, "ui_mode").equals("2")
-//            ) {
-//                finish();
-//                startActivity(new Intent(this, Aware_Participant.class));
-//            }
-//        }
+        if (Aware.isStudy(this)) {
+            if (Aware.getSetting(this, Aware_Preferences.INTERFACE_LOCKED).equals("true") ||
+                    Aware.getSetting(this, "ui_mode").equals("1") || Aware.getSetting(this, "ui_mode").equals("2")
+            ) {
+                finish();
+                startActivity(new Intent(this, Aware_Participant.class));
+            }
+        }
     }
 
     @Override
@@ -463,7 +462,6 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
             } catch (PackageManager.NameNotFoundException e) {
             }
 
-            // TODO RIO: Replace POST to webserver
             try {
                 new Https(SSLManager.getHTTPS(getApplicationContext(), "https://api.awareframework.com/index.php")).dataPOST("https://api.awareframework.com/index.php/awaredev/alive", device_ping, true);
             } catch (FileNotFoundException e) {
