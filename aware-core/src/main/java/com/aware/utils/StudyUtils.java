@@ -5,6 +5,8 @@ package com.aware.utils;
  */
 
 import android.app.IntentService;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -16,18 +18,32 @@ import android.net.Uri;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.aware.Applications;
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
+import com.aware.ESM;
+import com.aware.R;
 import com.aware.providers.Aware_Provider;
+import com.aware.ui.esms.ESM_Question;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.skyscreamer.jsonassert.JSONAssert;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import androidx.core.app.NotificationCompat;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * Service that allows plugins/applications to send data to AWARE's dashboard study
@@ -36,6 +52,8 @@ import java.util.List;
  * TODO: fix parsing of the URL segments that may be missing
  */
 public class StudyUtils extends IntentService {
+    private static final String[] REQUIRED_STUDY_CONFIG_KEYS = {"database", "questions",
+            "schedules", "sensors", "study_info"};
 
     /**
      * Received broadcast to join a study
@@ -63,7 +81,7 @@ public class StudyUtils extends IntentService {
         String request;
         if (protocol.equals("https")) {
 
-            SSLManager.handleUrl(getApplicationContext(), full_url, true);
+//            SSLManager.handleUrl(getApplicationContext(), full_url, true);
 
             try {
                 request = new Https(SSLManager.getHTTPS(getApplicationContext(), full_url)).dataGET(full_url.substring(0, full_url.indexOf("/index.php")) + "/index.php/webservice/client_get_study_info/" + study_api_key, true);
@@ -222,12 +240,11 @@ public class StudyUtils extends IntentService {
         //Now apply the new settings
         try {
             Aware.setSetting(context, Aware_Preferences.WEBSERVICE_SERVER, webserviceServer);
-            JSONObject dbConfig = configs.getJSONObject(0).getJSONObject("database");
+            JSONObject studyConfig = configs.getJSONObject(0);  // use first config
 
-            String host = Aware.getSetting(context, Aware_Preferences.DB_HOST);
+            // Set database settings
+            JSONObject dbConfig = studyConfig.getJSONObject("database");
             Aware.setSetting(context, Aware_Preferences.DB_HOST, dbConfig.getString("database_host"));
-            String host2 = Aware.getSetting(context, Aware_Preferences.DB_HOST);
-
             Aware.setSetting(context, Aware_Preferences.DB_PORT, dbConfig.getInt("database_port"));
             Aware.setSetting(context, Aware_Preferences.DB_NAME, dbConfig.getString("database_name"));
             Aware.setSetting(context, Aware_Preferences.DB_USERNAME, dbConfig.getString("database_username"));
@@ -239,6 +256,8 @@ public class StudyUtils extends IntentService {
         JSONArray plugins = new JSONArray();
         JSONArray sensors = new JSONArray();
         JSONArray schedulers = new JSONArray();
+        JSONArray esm_schedules = new JSONArray();
+        JSONArray questions = new JSONArray();
 
         for (int i = 0; i < configs.length(); i++) {
             try {
@@ -249,8 +268,12 @@ public class StudyUtils extends IntentService {
                 if (element.has("sensors")) {
                     sensors = element.getJSONArray("sensors");
                 }
+                if (element.has("schedulers")) {
+                    schedulers = element.getJSONArray("schedulers");
+                }
                 if (element.has("schedules")) {
-                    schedulers = element.getJSONArray("schedules");
+                    esm_schedules = element.getJSONArray("schedules");
+                    if (element.has("questions")) questions = element.getJSONArray("questions");
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -286,10 +309,40 @@ public class StudyUtils extends IntentService {
             }
         }
 
-        // TODO RIO: Set ESMs here
-        //Set schedulers
+        // Set up ESM question objects
+        HashMap<String, JSONObject> esm_questions = new HashMap<>();
+        for (int i = 0; i < questions.length(); i++) {
+            try {
+                JSONObject questionJson = questions.getJSONObject(i);
+                String questionId = questionJson.getString("id");
+                esm_questions.put(questionId, new JSONObject().put("esm", questionJson));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Set ESM schedules
+        for (int i = 0; i < esm_schedules.length(); i++) {
+            try {
+                JSONObject scheduleJson = esm_schedules.getJSONObject(i);
+                JSONArray questionIds = scheduleJson.getJSONArray("questions");
+                JSONArray questionObjects = new JSONArray();
+
+                for (int j = 0; j < questionIds.length(); j++) {
+                    questionObjects.put(esm_questions.get(questionIds.getString(j)));
+                }
+
+                createEsmSchedule(context, scheduleJson, questionObjects);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        //Set other schedulers
         if (schedulers.length() > 0)
             Scheduler.setSchedules(context, schedulers);
+
+        // TODO: Set scheduler for checking/updating study config
 
         for (String package_name : active_plugins) {
             PackageInfo installed = PluginsManager.isInstalled(context, package_name);
@@ -306,5 +359,184 @@ public class StudyUtils extends IntentService {
         //Send data to server
         Intent sync = new Intent(Aware.ACTION_AWARE_SYNC_DATA);
         context.sendBroadcast(sync);
+    }
+
+    /**
+     * Creates a schedule for triggering ESMs based on a JSON object that defines a schedule.
+     * Examples of the schedule JSON:<p>
+     * Interval:
+     * Random:
+     * Repeat:
+     * </p>
+     * @param context
+     * @param scheduleJson JSONObject representing the schedule
+     * @param esmsArray JSONArray representing the ESM questions
+     */
+    private static void createEsmSchedule(Context context, JSONObject scheduleJson,
+                                          JSONArray esmsArray) {
+        try {
+            String type = scheduleJson.getString("type");
+            String title = scheduleJson.getString("title");
+            Scheduler.Schedule schedule = new Scheduler.Schedule(title);
+
+            if (Aware.DEBUG) Log.d(Aware.TAG, "Creating ESM schedule: " + scheduleJson.toString());
+
+            // Set schedule parameters
+            switch (type) {
+                case "interval":
+                    JSONArray days = scheduleJson.getJSONArray("days");
+                    for (int i = 0; i < days.length(); i ++) {
+                        schedule.addWeekday(days.getString(i));
+                    }
+                    JSONArray hours = scheduleJson.getJSONArray("hours");
+                    for (int i = 0; i < hours.length(); i ++) {
+                        schedule.addHour(hours.getInt(i));
+                    }
+                    break;
+                case "random":
+                    schedule.addHour(scheduleJson.getInt("firsthour"))
+                            .addHour(scheduleJson.getInt("lasthour"))
+                            .random(scheduleJson.getInt("randomCount"),
+                                    scheduleJson.getInt("randomInterval"));
+                    break;
+                case "repeat":
+                    schedule.setInterval(scheduleJson.getInt("repeatInterval"));
+                    break;
+                default:
+                    return;
+            }
+
+            // Set trigger for ESMs as the schedule's title
+            for (int i = 0; i < esmsArray.length(); i ++) {
+                esmsArray.getJSONObject(i).getJSONObject("esm").put(ESM_Question.esm_trigger, title);
+            }
+
+            schedule.setActionType(Scheduler.ACTION_TYPE_BROADCAST)
+                    .setActionIntentAction(ESM.ACTION_AWARE_QUEUE_ESM)
+                    .addActionExtra(ESM.EXTRA_ESM, esmsArray.toString());
+            Scheduler.saveSchedule(context, schedule);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     *
+     * @param context
+     */
+    public static void syncStudyConfig(Context context) {
+        if (!Aware.isStudy(context)) return;
+
+        String studyUrl = Aware.getSetting(context, Aware_Preferences.WEBSERVICE_SERVER);
+        Cursor study = Aware.getStudy(context,
+                Aware.getSetting(context, Aware_Preferences.WEBSERVICE_SERVER));
+
+        if (study != null && study.moveToFirst()) {
+            try {
+//                JSONObject localConfig = new JSONArray(study.getString(
+//                        study.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)))
+//                        .getJSONObject(0);
+                JSONObject localConfig = new JSONObject(study.getString(
+                        study.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)));
+                JSONObject newConfig = getStudyConfig(studyUrl);
+                if (!validateStudyConfig(context, newConfig)) {
+                    Log.e(Aware.TAG, "Failed to sync study config, something is wrong with the config.");
+                    return;
+                }
+                if (jsonEquals(localConfig, newConfig, false)) {
+                    if (Aware.DEBUG) Aware.debug(context, "No change to study config detected.");
+                    return;
+                }
+                applySettings(context, studyUrl, new JSONArray(newConfig));
+                if (Aware.DEBUG) Aware.debug(context, "Updated study config: " + newConfig);
+
+                // TODO RIO: Update last sync date + show notification of study config update
+
+                // Notify the user that study config has been updated
+                Intent accessibilitySettings = new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS);
+                accessibilitySettings.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                PendingIntent clickIntent = PendingIntent.getActivity(context, 0, accessibilitySettings, PendingIntent.FLAG_UPDATE_CURRENT);
+
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(context, Aware.AWARE_NOTIFICATION_CHANNEL_GENERAL)
+                        .setChannelId(Aware.AWARE_NOTIFICATION_CHANNEL_GENERAL)
+                        .setContentIntent(clickIntent)
+                        .setSmallIcon(R.drawable.ic_stat_aware_accessibility)
+                        .setContentTitle(context.getResources().getString(R.string.aware_notif_study_sync_title))
+                        .setContentText(context.getResources().getString(R.string.aware_notif_study_sync));
+                builder = Aware.setNotificationProperties(builder, Aware.AWARE_NOTIFICATION_IMPORTANCE_GENERAL);
+
+                NotificationManager notManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                notManager.notify(Applications.ACCESSIBILITY_NOTIFICATION_ID, builder.build());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Retrieves a study config from a file hosted online.
+     *
+     * @param studyUrl direct download link to the file or a link to the shared file (via Google
+     *                 drive or Dropbox)
+     * @return JSONObject representing the study config
+     */
+    public static JSONObject getStudyConfig(String studyUrl) throws JSONException {
+        // Convert shared links from Google drive and Dropbox into direct download URLs
+        if (studyUrl.contains("drive.google.com")) {
+            String patternStr = studyUrl.contains("drive.google.com/file") ?
+                    "(?<=\\/d\\/).*(?=\\/)" : "(?<=id=).*";
+            Pattern pattern = Pattern.compile(patternStr);
+            Matcher matcher = pattern.matcher(studyUrl);
+            if (matcher.find()) {
+                String fileId = matcher.group(0);
+                studyUrl = "https://drive.google.com/uc?export=download&id=" + fileId;
+            }
+        } else if (studyUrl.contains("www.dropbox.com")) {
+            studyUrl = studyUrl.replace("www.dropbox.com", "dl.dropboxusercontent.com");
+        }
+
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder().url(studyUrl).build();
+
+        try (Response response = client.newCall(request).execute()) {
+            String responseStr = response.body().string();
+            JSONObject responseJson = new JSONObject(responseStr);
+            return responseJson;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Validates that the study config has the correct JSON schema for AWARE.
+     * It needs to have the keys: "database", "sensors" and "study_info".
+     *
+     * @param context application context
+     * @param config JSON representing a study configuration
+     * @return true if the study config is valid, false otherwise
+     */
+    public static boolean validateStudyConfig(Context context, JSONObject config) {
+        for (String key: REQUIRED_STUDY_CONFIG_KEYS) {
+            if (!config.has(key)) return false;
+        }
+
+        // Test database connection
+        try {
+            JSONObject dbInfo = config.getJSONObject("database");
+            return Jdbc.testConnection(dbInfo.getString("database_host"),
+                    dbInfo.getString("database_port"), dbInfo.getString("database_name"),
+                    dbInfo.getString("database_username"), dbInfo.getString("database_password"));
+        } catch (JSONException e) {
+            return false;
+        }
+    }
+
+    private static boolean jsonEquals(JSONObject obj1, JSONObject obj2, boolean strict) {
+        try {
+            JSONAssert.assertEquals(obj1, obj2, strict);
+            return true;
+        } catch (JSONException e) {
+            return false;
+        }
     }
 }

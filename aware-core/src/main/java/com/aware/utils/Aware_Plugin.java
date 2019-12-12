@@ -109,9 +109,9 @@ public class Aware_Plugin extends Service {
 
             PERMISSIONS_OK = true;
 
-            if (Aware.getSetting(this, Aware_Preferences.STATUS_WEBSERVICE).equals("true")) {
-                SSLManager.handleUrl(getApplicationContext(), Aware.getSetting(this, Aware_Preferences.WEBSERVICE_SERVER), true);
-            }
+//            if (Aware.getSetting(this, Aware_Preferences.STATUS_WEBSERVICE).equals("true")) {
+//                SSLManager.handleUrl(getApplicationContext(), Aware.getSetting(this, Aware_Preferences.WEBSERVICE_SERVER), true);
+//            }
 
             //Restores core AWARE service in case it get's killed
             if (!Aware.IS_CORE_RUNNING) {

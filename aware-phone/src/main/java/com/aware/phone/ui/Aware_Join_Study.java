@@ -21,8 +21,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
-import com.aware.phone.Aware_Client;
 import com.aware.phone.R;
+import com.aware.phone.ui.dialogs.JoinStudyDialog;
 import com.aware.phone.utils.AwareUtil;
 import com.aware.providers.Aware_Provider;
 import com.aware.utils.*;
@@ -64,15 +64,6 @@ public class Aware_Join_Study extends Aware_Activity {
 
         pluginsInstalled = false;
 
-        TextView txtStudyTitle = (TextView) findViewById(R.id.txt_title);
-        TextView txtStudyDescription = (TextView) findViewById(R.id.txt_description);
-        TextView txtStudyResearcher = (TextView) findViewById(R.id.txt_researcher);
-        btnAction = (Button) findViewById(R.id.btn_sign_up);
-        btnQuit = (Button) findViewById(R.id.btn_quit_study);
-
-        // Quitting a study will be done through the main activity - Aware_Light_Client.java
-        btnQuit.setVisibility(View.GONE);
-
         EditText participant_label = findViewById(R.id.participant_label);
         participant_label.setText(Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_LABEL));
         participant_label.addTextChangedListener(new TextWatcher() {
@@ -100,18 +91,9 @@ public class Aware_Join_Study extends Aware_Activity {
         llPluginsRequired = (LinearLayout) findViewById(R.id.ll_plugins_required);
 
         study_url = getIntent().getStringExtra(EXTRA_STUDY_URL);
-        String study_config_str = getIntent().getStringExtra(EXTRA_STUDY_CONFIG);
-//        JSONObject studyConfig;
-//        if (!study_config_str.isEmpty()) {
-//            try {
-//                 studyConfig = new JSONObject(study_config_str);
-//            } catch (JSONException e) {
-//                e.printStackTrace();
-//            }
-//        }
+        String studyConfigStr = getIntent().getStringExtra(EXTRA_STUDY_CONFIG);
 
-        // TODO: Deeplink - validate study here
-        //If we are getting here from an AWARE study link
+        //If we are getting here from an AWARE study link (deeplink)
         String scheme = getIntent().getScheme();
         if (scheme != null) {
             if (Aware.DEBUG)
@@ -125,151 +107,169 @@ public class Aware_Join_Study extends Aware_Activity {
 
         if (Aware.DEBUG) Log.d(Aware.TAG, "Study URL:" + study_url);
 
-        Cursor qry = Aware.getStudy(this, study_url);
-        if (qry == null || !qry.moveToFirst()) {
-            new PopulateStudy().execute(study_url, study_config_str);
+        // Fetch study config if not passed in intent
+        if (studyConfigStr == null) {
+            new JoinStudyDialog(Aware_Join_Study.this).validateStudy(study_url);  // TODO TEST 1
         } else {
-            try {
-                study_configs = new JSONArray().put(new JSONObject(study_config_str));
+            Cursor qry = Aware.getStudy(this, study_url);
+            if (qry == null || !qry.moveToFirst()) {
+                new PopulateStudy().execute(study_url, studyConfigStr);
+            } else {
+                initView(qry, studyConfigStr);
+            }
+
+            IntentFilter pluginStatuses = new IntentFilter();
+            pluginStatuses.addAction(Aware.ACTION_AWARE_PLUGIN_INSTALLED);
+            pluginStatuses.addAction(Aware.ACTION_AWARE_PLUGIN_UNINSTALLED);
+            registerReceiver(pluginCompliance, pluginStatuses);
+        }
+    }
+
+    private void initView(Cursor qry, String studyConfig) {
+        TextView txtStudyTitle = findViewById(R.id.txt_title);
+        TextView txtStudyDescription = findViewById(R.id.txt_description);
+        TextView txtStudyResearcher = findViewById(R.id.txt_researcher);
+        btnAction = findViewById(R.id.btn_sign_up);
+        btnQuit = findViewById(R.id.btn_quit_study);
+
+        // Quitting a study will be done through the main activity - Aware_Light_Client.java
+        btnQuit.setVisibility(View.GONE);
+
+        try {
+            study_configs = new JSONArray().put(new JSONObject(studyConfig));
 //                study_configs = new JSONArray().put(new JSONObject(qry.getString(qry.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG))));
-                txtStudyTitle.setText(qry.getString(qry.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_TITLE)));
-                txtStudyDescription.setText(Html.fromHtml(qry.getString(qry.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION)), null, null));
-                txtStudyResearcher.setText(qry.getString(qry.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_PI)));
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            if (!qry.isClosed()) qry.close();
-
-            if (study_configs != null) {
-                populateStudyInfo(study_configs);
-            }
-
-            btnAction.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-                    btnAction.setEnabled(false);
-                    btnAction.setAlpha(0.5f);
-
-                    Cursor study = Aware.getStudy(getApplicationContext(), study_url);
-                    if (study != null && study.moveToFirst()) {
-                        ContentValues studyData = new ContentValues();
-                        studyData.put(Aware_Provider.Aware_Studies.STUDY_JOINED, System.currentTimeMillis());
-                        studyData.put(Aware_Provider.Aware_Studies.STUDY_EXIT, 0);
-                        getContentResolver().update(Aware_Provider.Aware_Studies.CONTENT_URI, studyData, Aware_Provider.Aware_Studies.STUDY_URL + " LIKE '" + study_url + "'", null);
-                    }
-                    if (study != null && !study.isClosed()) study.close();
-
-                    new JoinStudyAsync().execute();
-                }
-            });
-
-            btnQuit.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-
-                    Cursor dbStudy = Aware.getStudy(getApplicationContext(), study_url);
-                    if (dbStudy != null && dbStudy.moveToFirst()) {
-                        ContentValues complianceEntry = new ContentValues();
-                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TIMESTAMP, System.currentTimeMillis());
-                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
-                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_KEY, dbStudy.getInt(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_KEY)));
-                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_API, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_API)));
-                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_URL, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_URL)));
-                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_PI, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_PI)));
-                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_CONFIG, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)));
-                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_JOINED, dbStudy.getLong(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_JOINED)));
-                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_EXIT, dbStudy.getLong(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_EXIT)));
-                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TITLE, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_TITLE)));
-                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION)));
-                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_COMPLIANCE, "attempt to quit study");
-
-                        getContentResolver().insert(Aware_Provider.Aware_Studies.CONTENT_URI, complianceEntry);
-                    }
-                    if (dbStudy != null && !dbStudy.isClosed()) dbStudy.close();
-
-                    new AlertDialog.Builder(Aware_Join_Study.this)
-                            .setMessage("Are you sure you want to quit the study?")
-                            .setCancelable(false)
-                            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    btnQuit.setEnabled(false);
-                                    btnQuit.setAlpha(1f);
-                                    btnAction.setEnabled(false);
-                                    btnAction.setAlpha(1f);
-
-                                    Cursor dbStudy = Aware.getStudy(getApplicationContext(), Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER));
-                                    if (dbStudy != null && dbStudy.moveToFirst()) {
-                                        ContentValues complianceEntry = new ContentValues();
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TIMESTAMP, System.currentTimeMillis());
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_KEY, dbStudy.getInt(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_KEY)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_API, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_API)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_URL, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_URL)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_PI, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_PI)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_CONFIG, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_JOINED, dbStudy.getLong(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_JOINED)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_EXIT, System.currentTimeMillis());
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TITLE, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_TITLE)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_COMPLIANCE, "quit study");
-
-                                        getContentResolver().insert(Aware_Provider.Aware_Studies.CONTENT_URI, complianceEntry);
-                                    }
-                                    if (dbStudy != null && !dbStudy.isClosed()) dbStudy.close();
-
-                                    dialogInterface.dismiss();
-
-                                    new QuitStudyAsync().execute();
-                                }
-                            })
-                            .setNegativeButton("No", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    Cursor dbStudy = Aware.getStudy(getApplicationContext(), Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER));
-                                    if (dbStudy != null && dbStudy.moveToFirst()) {
-                                        ContentValues complianceEntry = new ContentValues();
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TIMESTAMP, System.currentTimeMillis());
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_KEY, dbStudy.getInt(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_KEY)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_API, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_API)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_URL, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_URL)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_PI, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_PI)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_CONFIG, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_JOINED, dbStudy.getLong(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_JOINED)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_EXIT, dbStudy.getLong(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_EXIT)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TITLE, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_TITLE)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION)));
-                                        complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_COMPLIANCE, "canceled quit");
-
-                                        getContentResolver().insert(Aware_Provider.Aware_Studies.CONTENT_URI, complianceEntry);
-                                    }
-                                    if (dbStudy != null && !dbStudy.isClosed()) dbStudy.close();
-
-                                    dialogInterface.dismiss();
-                                }
-                            })
-                            .setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                @Override
-                                public void onDismiss(DialogInterface dialogInterface) {
-                                    //Sync to server the studies statuses
-                                    Bundle sync = new Bundle();
-                                    sync.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
-                                    sync.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
-                                    ContentResolver.requestSync(Aware.getAWAREAccount(getApplicationContext()), Aware_Provider.getAuthority(getApplicationContext()), sync);
-                                }
-                            })
-                            .show();
-                }
-            });
+            txtStudyTitle.setText(qry.getString(qry.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_TITLE)));
+            txtStudyDescription.setText(Html.fromHtml(qry.getString(qry.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION)), null, null));
+            txtStudyResearcher.setText(qry.getString(qry.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_PI)));
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
 
-        IntentFilter pluginStatuses = new IntentFilter();
-        pluginStatuses.addAction(Aware.ACTION_AWARE_PLUGIN_INSTALLED);
-        pluginStatuses.addAction(Aware.ACTION_AWARE_PLUGIN_UNINSTALLED);
-        registerReceiver(pluginCompliance, pluginStatuses);
+        if (!qry.isClosed()) qry.close();
+
+        if (study_configs != null) {
+            populateStudyInfo(study_configs);
+        }
+
+        btnAction.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                btnAction.setEnabled(false);
+                btnAction.setAlpha(0.5f);
+
+                Cursor study = Aware.getStudy(getApplicationContext(), study_url);
+                if (study != null && study.moveToFirst()) {
+                    ContentValues studyData = new ContentValues();
+                    studyData.put(Aware_Provider.Aware_Studies.STUDY_JOINED, System.currentTimeMillis());
+                    studyData.put(Aware_Provider.Aware_Studies.STUDY_EXIT, 0);
+                    getContentResolver().update(Aware_Provider.Aware_Studies.CONTENT_URI, studyData, Aware_Provider.Aware_Studies.STUDY_URL + " LIKE '" + study_url + "'", null);
+                }
+                if (study != null && !study.isClosed()) study.close();
+
+                new JoinStudyAsync().execute();
+            }
+        });
+
+        btnQuit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Cursor dbStudy = Aware.getStudy(getApplicationContext(), study_url);
+                if (dbStudy != null && dbStudy.moveToFirst()) {
+                    ContentValues complianceEntry = new ContentValues();
+                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TIMESTAMP, System.currentTimeMillis());
+                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
+                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_KEY, dbStudy.getInt(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_KEY)));
+                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_API, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_API)));
+                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_URL, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_URL)));
+                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_PI, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_PI)));
+                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_CONFIG, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)));
+                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_JOINED, dbStudy.getLong(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_JOINED)));
+                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_EXIT, dbStudy.getLong(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_EXIT)));
+                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TITLE, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_TITLE)));
+                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION)));
+                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_COMPLIANCE, "attempt to quit study");
+
+                    getContentResolver().insert(Aware_Provider.Aware_Studies.CONTENT_URI, complianceEntry);
+                }
+                if (dbStudy != null && !dbStudy.isClosed()) dbStudy.close();
+
+                new AlertDialog.Builder(Aware_Join_Study.this)
+                        .setMessage("Are you sure you want to quit the study?")
+                        .setCancelable(false)
+                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                btnQuit.setEnabled(false);
+                                btnQuit.setAlpha(1f);
+                                btnAction.setEnabled(false);
+                                btnAction.setAlpha(1f);
+
+                                Cursor dbStudy = Aware.getStudy(getApplicationContext(), Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER));
+                                if (dbStudy != null && dbStudy.moveToFirst()) {
+                                    ContentValues complianceEntry = new ContentValues();
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TIMESTAMP, System.currentTimeMillis());
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_KEY, dbStudy.getInt(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_KEY)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_API, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_API)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_URL, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_URL)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_PI, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_PI)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_CONFIG, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_JOINED, dbStudy.getLong(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_JOINED)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_EXIT, System.currentTimeMillis());
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TITLE, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_TITLE)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_COMPLIANCE, "quit study");
+
+                                    getContentResolver().insert(Aware_Provider.Aware_Studies.CONTENT_URI, complianceEntry);
+                                }
+                                if (dbStudy != null && !dbStudy.isClosed()) dbStudy.close();
+
+                                dialogInterface.dismiss();
+
+                                new QuitStudyAsync().execute();
+                            }
+                        })
+                        .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                Cursor dbStudy = Aware.getStudy(getApplicationContext(), Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER));
+                                if (dbStudy != null && dbStudy.moveToFirst()) {
+                                    ContentValues complianceEntry = new ContentValues();
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TIMESTAMP, System.currentTimeMillis());
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_KEY, dbStudy.getInt(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_KEY)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_API, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_API)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_URL, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_URL)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_PI, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_PI)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_CONFIG, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_JOINED, dbStudy.getLong(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_JOINED)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_EXIT, dbStudy.getLong(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_EXIT)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_TITLE, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_TITLE)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION, dbStudy.getString(dbStudy.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION)));
+                                    complianceEntry.put(Aware_Provider.Aware_Studies.STUDY_COMPLIANCE, "canceled quit");
+
+                                    getContentResolver().insert(Aware_Provider.Aware_Studies.CONTENT_URI, complianceEntry);
+                                }
+                                if (dbStudy != null && !dbStudy.isClosed()) dbStudy.close();
+
+                                dialogInterface.dismiss();
+                            }
+                        })
+                        .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                            @Override
+                            public void onDismiss(DialogInterface dialogInterface) {
+                                //Sync to server the studies statuses
+                                Bundle sync = new Bundle();
+                                sync.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
+                                sync.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+                                ContentResolver.requestSync(Aware.getAWAREAccount(getApplicationContext()), Aware_Provider.getAuthority(getApplicationContext()), sync);
+                            }
+                        })
+                        .show();
+            }
+        });
     }
 
     private class PopulateStudy extends AsyncTask<String, Void, JSONObject> {
@@ -298,91 +298,7 @@ public class Aware_Join_Study extends Aware_Activity {
             study_config = params[1];
 
             if (study_url.length() == 0) return null;
-//
-//            Uri study_uri = Uri.parse(study_url);
-//            String protocol = study_uri.getScheme();
-//            List<String> path_segments = study_uri.getPathSegments();
-//            if (path_segments.size() > 0) {
-//                study_api_key = path_segments.get(path_segments.size() - 1);
-//                study_id = path_segments.get(path_segments.size() - 2);
-//
-//                Log.d(Aware.TAG, "Study API: " + study_api_key + " \nStudy ID: " + study_id);
-//
-//                String request;
-//                if (protocol.equals("https")) {
-//                    //Note: Joining a study always downloads the certificate.
-//                    SSLManager.handleUrl(getApplicationContext(), study_url, true);
-//
-//                    while (!SSLManager.hasCertificate(getApplicationContext(), study_uri.getHost())) {
-//                        //wait until we have the certificate downloaded
-//                    }
-//
-//                    try {
-//                        request = new Https(SSLManager.getHTTPS(getApplicationContext(), study_url))
-//                                .dataGET(study_uri.getHost() + "/index.php/webservice/client_get_study_info/" + study_api_key,
-//                                        true);
-//                    } catch (FileNotFoundException e) {
-//                        Log.d(Aware.TAG, "Failed to load certificate: " + e.getMessage());
-//                        request = null;
-//                    }
-//                } else {
-//                    request = new Http().dataGET(study_uri.getHost() + "/index.php/webservice/client_get_study_info/" + study_api_key, true);
-//                }
-//
-//                if (Aware.DEBUG) Log.d(Aware.TAG, "Request result: " + request);
-//
-//                if (request != null) {
-//                    try {
-//                        if (request.equals("[]")) {
-//                            return null;
-//                        }
-//                        JSONObject study_data = new JSONObject(request);
-//
-//                        //Automatically register this device on the study and create credentials for this device ID!
-//                        Hashtable<String, String> data = new Hashtable<>();
-//                        data.put(Aware_Preferences.DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
-//                        data.put("platform", "android");
-//                        try {
-//                            PackageInfo package_info = getApplicationContext().getPackageManager().getPackageInfo(getApplicationContext().getPackageName(), 0);
-//                            data.put("package_name", package_info.packageName);
-//                            data.put("package_version_code", String.valueOf(package_info.versionCode));
-//                            data.put("package_version_name", String.valueOf(package_info.versionName));
-//                        } catch (PackageManager.NameNotFoundException e) {
-//                            Log.d(Aware.TAG, "Failed to put package info: " + e);
-//                            e.printStackTrace();
-//                        }
-//
-//                        // This is where the study config is obtained
-//                        String answer;
-//                        if (protocol.equals("https")) {
-//                            try {
-//                                answer = new Https(SSLManager.getHTTPS(getApplicationContext(), study_url)).dataPOST(study_url, data, true);
-//                            } catch (FileNotFoundException e) {
-//                                answer = null;
-//                            }
-//                        } else {
-//                            answer = new Http().dataPOST(study_url, data, true);
-//                        }
-//
-//                        if (answer != null) {
-//                            try {
-//                                JSONArray configs_study = new JSONArray(answer);
-//                                if (!configs_study.getJSONObject(0).has("message")) {
-//                                    study_config = configs_study.toString();
-//                                }
-//                            } catch (JSONException e) {
-//                                e.printStackTrace();
-//                            }
-//                        } else return null;
-//
-//                        return study_data;
-//                    } catch (JSONException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            } else {
-//                Toast.makeText(Aware_Join_Study.this, "Missing API key or study ID. Scanned: " + study_url, Toast.LENGTH_SHORT).show();
-//            }
+
             try {
                 return new JSONObject(study_config);
             } catch (JSONException e) {
@@ -434,7 +350,7 @@ public class Aware_Join_Study extends Aware_Activity {
                         studyData.put(Aware_Provider.Aware_Studies.STUDY_API, study_api_key);
                         studyData.put(Aware_Provider.Aware_Studies.STUDY_URL, study_url);
                         studyData.put(Aware_Provider.Aware_Studies.STUDY_CONFIG, study_config);
-                        studyData.put(Aware_Provider.Aware_Studies.STUDY_KEY, studyInfo.getString("id"));
+                        studyData.put(Aware_Provider.Aware_Studies.STUDY_KEY, "0"); // studyInfo.getString("id")); STUDY_KEY needs type INT
                         studyData.put(Aware_Provider.Aware_Studies.STUDY_PI, studyInfo.getString("researcher_first") + " " + studyInfo.getString("researcher_last") + "\nContact: " + studyInfo.getString("researcher_contact"));
                         studyData.put(Aware_Provider.Aware_Studies.STUDY_TITLE, studyInfo.getString("study_title"));
                         studyData.put(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION, studyInfo.getString("study_description"));
@@ -454,7 +370,7 @@ public class Aware_Join_Study extends Aware_Activity {
                         studyData.put(Aware_Provider.Aware_Studies.STUDY_API, study_api_key);
                         studyData.put(Aware_Provider.Aware_Studies.STUDY_URL, study_url);
                         studyData.put(Aware_Provider.Aware_Studies.STUDY_CONFIG, study_config);
-                        studyData.put(Aware_Provider.Aware_Studies.STUDY_KEY, studyInfo.getString("id"));
+                        studyData.put(Aware_Provider.Aware_Studies.STUDY_KEY, "0"); // studyInfo.getString("id")); STUDY_KEY needs type INT
                         studyData.put(Aware_Provider.Aware_Studies.STUDY_PI, studyInfo.getString("researcher_first") + " " + studyInfo.getString("researcher_last") + "\nContact: " + studyInfo.getString("researcher_contact"));
                         studyData.put(Aware_Provider.Aware_Studies.STUDY_TITLE, studyInfo.getString("study_title"));
                         studyData.put(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION, studyInfo.getString("study_description"));
@@ -469,13 +385,12 @@ public class Aware_Join_Study extends Aware_Activity {
                     if (dbStudy != null && !dbStudy.isClosed()) dbStudy.close();
 
 //                    mPopulating.dismiss();
-
-                    //Reload join study wizard. We already have the study info on the database.
-                    Intent studyInfoIntent = new Intent(getApplicationContext(), Aware_Join_Study.class);
-                    studyInfoIntent.putExtra(Aware_Join_Study.EXTRA_STUDY_URL, study_url);
-                    studyInfoIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(studyInfoIntent);
-
+                    Cursor qry = Aware.getStudy(Aware_Join_Study.this, study_url);
+                    if (qry != null && qry.moveToFirst()) {
+                        initView(qry, study_config);
+                    } else {
+                        if (Aware.DEBUG) Log.d(Aware.TAG, "Failed to init join study activity.");
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }

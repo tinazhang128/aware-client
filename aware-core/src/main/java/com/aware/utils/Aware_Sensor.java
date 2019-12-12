@@ -106,9 +106,10 @@ public class Aware_Sensor extends Service {
             startActivity(permissions);
         } else {
             PERMISSIONS_OK = true;
-            if (Aware.getSetting(this, Aware_Preferences.STATUS_WEBSERVICE).equals("true") && Aware.getSetting(this, Aware_Preferences.WEBSERVICE_SERVER).contains("https")) {
-                downloadCertificate(this);
-            }
+
+//            if (Aware.getSetting(this, Aware_Preferences.STATUS_WEBSERVICE).equals("true") && Aware.getSetting(this, Aware_Preferences.WEBSERVICE_SERVER).contains("https")) {
+//                downloadCertificate(this);
+//            }
             //Aware.debug(this, "active: " + getClass().getName() + " package: " + getPackageName());
         }
 
@@ -173,18 +174,18 @@ public class Aware_Sensor extends Service {
         }
     }
 
-    private void downloadCertificate(Context context) {
-        new SSLDownloadTask().execute(context);
-    }
+//    private void downloadCertificate(Context context) {
+//        new SSLDownloadTask().execute(context);
+//    }
 
-    class SSLDownloadTask extends AsyncTask<Context, Void, Void>
-    {
-        @Override
-        protected Void doInBackground(Context... params) {
-            SSLManager.handleUrl(getApplicationContext(), Aware.getSetting(params[0], Aware_Preferences.WEBSERVICE_SERVER), true);
-            return null;
-        }
-    }
+//    class SSLDownloadTask extends AsyncTask<Context, Void, Void>
+//    {
+//        @Override
+//        protected Void doInBackground(Context... params) {
+//            SSLManager.handleUrl(getApplicationContext(), Aware.getSetting(params[0], Aware_Preferences.WEBSERVICE_SERVER), true);
+//            return null;
+//        }
+//    }
 
     private static ContextBroadcaster contextBroadcaster = null;
 

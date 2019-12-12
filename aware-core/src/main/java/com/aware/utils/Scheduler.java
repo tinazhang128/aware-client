@@ -792,7 +792,7 @@ public class Scheduler extends Aware_Sensor {
         }
 
         try {
-            //No time constaints, trigger it!
+            //No time constraints, trigger it!
             if (schedule.getTimer() == -1
                     && schedule.getHours().length() == 0
                     && schedule.getMinutes().length() == 0
@@ -1178,7 +1178,7 @@ public class Scheduler extends Aware_Sensor {
             }
 
             if (schedule.getTimer() != -1) {
-
+                // TODO: Check if the schedules are removed correctly when schedule is of random intervals
                 //removeSchedule(getApplicationContext(), schedule.getScheduleID());
 
                 //Check if this scheduler is a random and it is the last time it was triggered, re-schedule new randoms

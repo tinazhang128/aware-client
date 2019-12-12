@@ -213,7 +213,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     /**
-     * Retuns the SQLiteDatabase
+     * Returns the SQLiteDatabase
      *
      * @return
      */

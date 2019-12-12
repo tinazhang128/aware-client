@@ -68,7 +68,6 @@ public class Aware_Light_Client extends Aware_Activity {
 
     private static final ArrayList<String> REQUIRED_PERMISSIONS = new ArrayList<>();
     private static final Hashtable<String, Integer> optionalSensors = new Hashtable<>();
-//    private static final
 
     private final Aware.AndroidPackageMonitor packageMonitor = new Aware.AndroidPackageMonitor();
 
@@ -77,9 +76,6 @@ public class Aware_Light_Client extends Aware_Activity {
         super.onCreate(savedInstanceState);
 
         prefs = getSharedPreferences("com.aware.phone", Context.MODE_PRIVATE);
-
-        // TODO RIO: Remove this later
-        Log.i(TAG, "DB HOST: " + Aware.getSetting(Aware_Light_Client.this, Aware_Preferences.DB_HOST));
 
         // Initialize views
         setContentView(R.layout.activity_aware_light);

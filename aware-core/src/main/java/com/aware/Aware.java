@@ -149,6 +149,11 @@ public class Aware extends Service {
     private static final String ACTION_AWARE_STUDY_COMPLIANCE = "ACTION_AWARE_STUDY_COMPLIANCE";
 
     /**
+     * Used to sync study config
+     */
+    private static final String ACTION_AWARE_SYNC_CONFIG = "ACTION_AWARE_SYNC_CONFIG";
+
+    /**
      * Notification ID for AWARE service as foreground (to handle Doze, Android O battery optimizations)
      */
     public static final int AWARE_FOREGROUND_SERVICE = 220882;
@@ -159,6 +164,7 @@ public class Aware extends Service {
     //public static final String SCHEDULE_SYNC_DATA = "schedule_aware_sync_data";
     public static final String SCHEDULE_STUDY_COMPLIANCE = "schedule_aware_study_compliance";
     public static final String SCHEDULE_KEEP_ALIVE = "schedule_aware_keep_alive";
+    public static final String SCHEDULE_SYNC_CONFIG = "schedule_aware_sync_config";
 
     /**
      * Android 8 notification channels support
@@ -238,6 +244,7 @@ public class Aware extends Service {
         registerReceiver(awareBoot, boot);
 
         IntentFilter awareActions = new IntentFilter();
+        awareActions.addAction(Aware.ACTION_AWARE_SYNC_CONFIG);
         awareActions.addAction(Aware.ACTION_AWARE_SYNC_DATA);
         awareActions.addAction(Aware.ACTION_QUIT_STUDY);
         registerReceiver(aware_BR, awareActions);
@@ -736,10 +743,16 @@ public class Aware extends Service {
                     complianceStatus(getApplicationContext());
                     checkBatteryLeft(getApplicationContext(), false);
 
+                    // TODO RIO: This might no longer be relevant
                     if (studyCheck == null && Aware.isStudy(getApplicationContext())) {
                         studyCheck = new AsyncStudyCheck();
                         studyCheck.execute();
                     }
+                }
+
+                if (intent.getAction().equalsIgnoreCase(ACTION_AWARE_KEEP_ALIVE)) {
+                    startAWARE(getApplicationContext());
+                    startPlugins(getApplicationContext());
                 }
 
                 if (intent.getAction().equalsIgnoreCase(ACTION_AWARE_KEEP_ALIVE)) {
@@ -761,6 +774,26 @@ public class Aware extends Service {
                         .setSyncAdapter(Aware.getAWAREAccount(this), Aware_Provider.getAuthority(this))
                         .setExtras(new Bundle()).build();
                 ContentResolver.requestSync(request);
+
+                // Set scheduler for syncing config data
+                try {
+                    Scheduler.Schedule syncConfig = Scheduler.getSchedule(this, Aware.SCHEDULE_SYNC_CONFIG);
+                    frequency = Long.parseLong(getSetting(this, Aware_Preferences.FREQUENCY_SYNC_CONFIG));
+
+                    if (syncConfig != null && syncConfig.getInterval() != frequency) {
+                        syncConfig.setInterval(frequency);
+                    }
+                    if (syncConfig == null) {
+                        syncConfig = new Scheduler.Schedule(Aware.SCHEDULE_SYNC_CONFIG);
+                        syncConfig.setInterval(frequency)
+                                .setActionType(Scheduler.ACTION_TYPE_BROADCAST)
+                                .setActionIntentAction(Aware.ACTION_AWARE_SYNC_CONFIG);
+
+                        Scheduler.saveSchedule(this, syncConfig);
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
 
         } else { //storage is not available, stop plugins and sensors
@@ -1861,7 +1894,6 @@ public class Aware extends Service {
         context.getContentResolver().delete(Aware_Settings.CONTENT_URI, null, null);
 
         //Remove all schedulers
-        context.getContentResolver().delete(Scheduler_Provider.Scheduler_Data.CONTENT_URI, null, null);
 
         //Read default client settings
         SharedPreferences prefs = context.getApplicationContext().getSharedPreferences(context.getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
@@ -2155,6 +2187,7 @@ public class Aware extends Service {
     /**
      * BroadcastReceiver that monitors for AWARE framework actions:
      * Aware#ACTION_AWARE_ACTION_QUIT_STUDY: quits a study
+     * Aware#ACTION_AWARE_SYNC_CONFIG: syncs study config
      * Aware#ACTION_AWARE_SYNC_DATA: send the data remotely
      * @author denzil
      */
@@ -2174,6 +2207,14 @@ public class Aware extends Service {
                 sync.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
                 sync.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
                 ContentResolver.requestSync(Aware.getAWAREAccount(context), Aware_Provider.getAuthority(context), sync);
+            }
+            if (intent.getAction().equals(Aware.ACTION_AWARE_SYNC_CONFIG) && isStudy(context)) {
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        StudyUtils.syncStudyConfig(context);
+                    }
+                };
             }
         }
     }

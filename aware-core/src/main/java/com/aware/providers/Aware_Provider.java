@@ -138,6 +138,7 @@ public class Aware_Provider extends ContentProvider {
         public static final String STUDY_TITLE = "study_title";
         public static final String STUDY_DESCRIPTION = "study_description";
         public static final String STUDY_JOINED = "double_join";
+        public static final String STUDY_UPDATED = "double_updated"; // TODO RIO: Use this date for all relevant study updates
         public static final String STUDY_EXIT = "double_exit";
         public static final String STUDY_COMPLIANCE = "study_compliance";
     }

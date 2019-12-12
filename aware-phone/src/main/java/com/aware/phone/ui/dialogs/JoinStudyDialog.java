@@ -18,7 +18,7 @@ import android.widget.Toast;
 
 import com.aware.phone.R;
 import com.aware.phone.ui.Aware_Join_Study;
-import com.aware.phone.utils.AwareUtil;
+import com.aware.utils.StudyUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -63,7 +63,11 @@ public class JoinStudyDialog extends DialogFragment {
         this.show(mActivity.getFragmentManager(), "dialog");
     }
 
-    private class ValidateStudyConfig extends AsyncTask<String, Void, String> {
+    public void validateStudy(String studyUrl) {
+        new ValidateStudyConfig().execute(studyUrl);
+    }
+
+    public class ValidateStudyConfig extends AsyncTask<String, Void, String> {
         private ProgressDialog mLoader;
         private String url;
 
@@ -84,10 +88,10 @@ public class JoinStudyDialog extends DialogFragment {
             Log.i(TAG, "Joining study with URL " + url);
 
             try {
-                studyConfig = AwareUtil.getStudyConfig(url);
+                studyConfig = StudyUtils.getStudyConfig(url);
                 JoinStudyDialog.this.dismiss();
 
-                if (studyConfig == null || !AwareUtil.validateStudyConfig(mActivity, studyConfig)) {
+                if (studyConfig == null || !StudyUtils.validateStudyConfig(mActivity, studyConfig)) {
                     Log.d(TAG, "Failed to join study with URL: " + url);
                 } else {
                     return studyConfig.toString();

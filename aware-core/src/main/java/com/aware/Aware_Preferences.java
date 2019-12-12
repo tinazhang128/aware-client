@@ -533,6 +533,11 @@ public class Aware_Preferences {
     public static final String WEBSERVICE_CHARGING = "webservice_charging";
 
     /**
+     * AWARE frequency for syncing study config (default = 60), in minutes
+     */
+    public static final String FREQUENCY_SYNC_CONFIG = "frequency_sync_config";
+
+    /**
      * AWARE webservice frequency (default = 30), in minutes
      */
     public static final String FREQUENCY_WEBSERVICE = "frequency_webservice";

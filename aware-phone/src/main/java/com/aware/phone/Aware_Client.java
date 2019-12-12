@@ -440,6 +440,7 @@ public class Aware_Client extends Aware_Activity implements SharedPreferences.On
         unregisterReceiver(packageMonitor);
     }
 
+    // TODO: Remove this function
     private class AsyncPing extends AsyncTask<Void, Void, Boolean> {
         @Override
         protected Boolean doInBackground(Void... params) {

@@ -44,8 +44,8 @@ public class Jdbc {
     public static boolean insertData(Context context, String table, JSONArray rows) {
         if (rows.length() == 0) return true;
 
-        Jdbc.transactionCount++;
         try {
+            Jdbc.transactionCount++;
             List<String> fields = new ArrayList<>();
             Iterator<String> fieldIterator = rows.getJSONObject(0).keys();
             while (fieldIterator.hasNext()) {
@@ -61,7 +61,6 @@ public class Jdbc {
 
     /**
      * Test if a connection to a database can be established.
-     * @param context application context
      * @param host db host
      * @param port db port
      * @param name db name
@@ -69,14 +68,13 @@ public class Jdbc {
      * @param password db password
      * @return true if a connection was established, false otherwise.
      */
-    public static boolean testConnection(Context context, String host, String port, String name, String username, String password) {
-        String connectionUrl = String.format("jdbc:mysql://%s:%s/%s?user=%s&password=%s",
-                host, port, name, username, password);
+    public static boolean testConnection(String host, String port, String name, String username, String password) {
+        String connectionUrl = String.format("jdbc:mysql://%s:%s/%s", host, port, name);
         Log.i(TAG, "Establishing connection to remote database...");
 
         try {
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            connection = DriverManager.getConnection(connectionUrl);
+            connection = DriverManager.getConnection(connectionUrl, username, password);
             Log.i(TAG, "Connected to remote database...");
             connection.close();
             return true;
@@ -92,20 +90,17 @@ public class Jdbc {
      * @param context application context
      */
     private static void connect(Context context) throws JdbcConnectionException {
-//        String connectionUrl = "jdbc:mysql://10.4.155.34:3306/aware1?user=aware&password=password";  // TODO RIO: form connection URL
-        String connectionUrl = String.format("jdbc:mysql://%s:%s/%s?user=%s&password=%s",
+        String connectionUrl = String.format("jdbc:mysql://%s:%s/%s?rewriteBatchedStatements=true",
                 Aware.getSetting(context, Aware_Preferences.DB_HOST),
                 Aware.getSetting(context, Aware_Preferences.DB_PORT),
-                Aware.getSetting(context, Aware_Preferences.DB_NAME),
-                Aware.getSetting(context, Aware_Preferences.DB_USERNAME),
-                Aware.getSetting(context, Aware_Preferences.DB_PASSWORD));
+                Aware.getSetting(context, Aware_Preferences.DB_NAME));
         Log.i(TAG, "Establishing connection to remote database...");
-
-        Log.i(TAG, "Connection url: " + connectionUrl); // todo rio: Remove this later
 
         try {
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            connection = DriverManager.getConnection(connectionUrl);
+            connection = DriverManager.getConnection(connectionUrl,
+                    Aware.getSetting(context, Aware_Preferences.DB_USERNAME),
+                    Aware.getSetting(context, Aware_Preferences.DB_PASSWORD));
             Log.i(TAG, "Connected to remote database...");
         } catch (Exception e) {
             Log.e(TAG, "Failed to establish connection to database, reason: " + e.getMessage());
@@ -137,20 +132,27 @@ public class Jdbc {
      * @throws JdbcConnectionException
      * @throws JSONException
      */
-    private static synchronized void insertBatch(Context context, String table, List<String> fields, JSONArray rows)
+    private static synchronized void insertBatch(Context context, String table, List<String> fields,
+                                                 JSONArray rows)
             throws JdbcConnectionException, JSONException, SQLException {
         try {
             if (Jdbc.connection == null || Jdbc.connection.isClosed()) {
+                Jdbc.transactionCount = 1; // reset transaction count if this is the first INSERT
                 connect(context);
             }
             Log.i(TAG, "# " + Jdbc.transactionCount + " Inserting " + rows.length() +
                     " row(s) of data into remote table '" + table + "'...");
 
+            List<String> fieldsWithBacktick = new ArrayList<>();  // in case of reserved keywords
             List<Character> sqlParamPlaceholder = new ArrayList<>();
-            for (int i = 0; i < fields.size(); i ++) sqlParamPlaceholder.add('?');
+            for (int i = 0; i < fields.size(); i ++) {
+                fieldsWithBacktick.add("`" + fields.get(i) + "`");
+                sqlParamPlaceholder.add('?');
+            }
 
             String sqlStatement = String.format("INSERT INTO %s (%s) VALUES (%s)", table,
-                    TextUtils.join(",", fields), TextUtils.join(",", sqlParamPlaceholder));
+                    TextUtils.join(",", fieldsWithBacktick),
+                    TextUtils.join(",", sqlParamPlaceholder));
             PreparedStatement ps = Jdbc.connection.prepareStatement(sqlStatement);
 
             for (int i = 0; i < rows.length(); i++) {
@@ -159,7 +161,7 @@ public class Jdbc {
 
                 for (String field: fields) {
                     ps.setString(paramIndex, row.getString(field));
-                    paramIndex ++;
+                    paramIndex++;
                 }
                 ps.addBatch();
             }
