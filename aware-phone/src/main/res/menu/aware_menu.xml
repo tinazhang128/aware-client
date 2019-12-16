@@ -6,11 +6,11 @@
 <!--        android:icon="@drawable/ic_action_aware_studies"-->
 <!--        android:title="Study"-->
 <!--        app:showAsAction="always" />-->
-    <item
-        android:id="@+id/aware_sync"
-        android:icon="@drawable/ic_action_webservice_sync"
-        android:title="@string/aware_sync"
-        app:showAsAction="always" />
+<!--    <item-->
+<!--        android:id="@+id/aware_sync"-->
+<!--        android:icon="@drawable/ic_action_webservice_sync"-->
+<!--        android:title="@string/aware_sync"-->
+<!--        app:showAsAction="always" />-->
 <!--    <item-->
 <!--        android:id="@+id/aware_qrcode"-->
 <!--        android:icon="@drawable/ic_action_qrcode"-->

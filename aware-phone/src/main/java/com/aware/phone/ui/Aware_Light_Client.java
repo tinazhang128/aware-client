@@ -28,9 +28,7 @@ import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ListAdapter;
 import android.widget.Toast;
 
@@ -38,9 +36,6 @@ import com.aware.Applications;
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
 import com.aware.phone.R;
-import com.aware.phone.ui.dialogs.JoinStudyDialog;
-import com.aware.phone.ui.dialogs.QuitStudyDialog;
-import com.aware.phone.ui.prefs.QuitStudyPref;
 import com.aware.ui.PermissionsHandler;
 
 import java.lang.reflect.Field;
@@ -262,6 +257,10 @@ public class Aware_Light_Client extends Aware_Activity {
 
             if (PreferenceScreen.class.isInstance(getPreferenceParent(pref))) {
                 PreferenceScreen parent = (PreferenceScreen) getPreferenceParent(pref);
+
+                Boolean prefEnabled = Boolean.valueOf(Aware.getSetting(Aware_Light_Client.this, Aware_Preferences.ENABLE_CONFIG_UPDATE));
+                parent.setEnabled(prefEnabled);  // enabled/disabled based on config
+
                 ListAdapter children = parent.getRootAdapter();
                 boolean is_active = false;
                 for (int i = 0; i < children.getCount(); i++) {

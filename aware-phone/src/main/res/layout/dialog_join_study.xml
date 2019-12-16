@@ -11,7 +11,7 @@
         android:layout_marginLeft="16dp"
         android:layout_marginRight="16dp"
         android:layout_marginBottom="16dp"
-        android:text="http://10.4.152.2:8000/study-config-latest.json"
+        android:text="https://drive.google.com/open?id=1b8_Gyy5kGpswZWE48P9mOal3XFTLZ5M-"
         android:autofillHints="Enter URL to join study" />
 
 </LinearLayout>

@@ -7,6 +7,7 @@ package com.aware.utils;
 import android.app.IntentService;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -15,6 +16,8 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -229,7 +232,20 @@ public class StudyUtils extends IntentService {
      * @param configs
      */
     public static void applySettings(Context context, String webserviceServer, JSONArray configs) {
+        applySettings(context, webserviceServer, configs, false);
+    }
 
+    /**
+     * Sets first all the settings to the client.
+     * If there are plugins, apply the same settings to them.
+     * This allows us to add plugins to studies from the dashboard.
+     *
+     * @param context
+     * @param webserviceServer
+     * @param configs
+     * @param insertCompliance true to insert a new compliance record (i.e. when updating a study)
+     */
+    public static void applySettings(Context context, String webserviceServer, JSONArray configs, Boolean insertCompliance) {
         boolean is_developer = Aware.getSetting(context, Aware_Preferences.DEBUG_FLAG).equals("true");
 
         //First reset the client to default settings...
@@ -241,6 +257,7 @@ public class StudyUtils extends IntentService {
         try {
             Aware.setSetting(context, Aware_Preferences.WEBSERVICE_SERVER, webserviceServer);
             JSONObject studyConfig = configs.getJSONObject(0);  // use first config
+            JSONObject studyInfo = studyConfig.getJSONObject("study_info");
 
             // Set database settings
             JSONObject dbConfig = studyConfig.getJSONObject("database");
@@ -249,6 +266,24 @@ public class StudyUtils extends IntentService {
             Aware.setSetting(context, Aware_Preferences.DB_NAME, dbConfig.getString("database_name"));
             Aware.setSetting(context, Aware_Preferences.DB_USERNAME, dbConfig.getString("database_username"));
             Aware.setSetting(context, Aware_Preferences.DB_PASSWORD, dbConfig.getString("database_password"));
+
+            // Set study information
+            if (insertCompliance) {
+                ContentValues studyData = new ContentValues();
+                studyData.put(Aware_Provider.Aware_Studies.STUDY_DEVICE_ID, Aware.getSetting(context, Aware_Preferences.DEVICE_ID));
+                studyData.put(Aware_Provider.Aware_Studies.STUDY_TIMESTAMP, System.currentTimeMillis());
+                studyData.put(Aware_Provider.Aware_Studies.STUDY_API, "");
+                studyData.put(Aware_Provider.Aware_Studies.STUDY_URL, webserviceServer);
+                studyData.put(Aware_Provider.Aware_Studies.STUDY_CONFIG, studyConfig.toString());
+                studyData.put(Aware_Provider.Aware_Studies.STUDY_KEY, "0");
+                studyData.put(Aware_Provider.Aware_Studies.STUDY_PI, studyInfo.getString("researcher_first") + " " + studyInfo.getString("researcher_last") + "\nContact: " + studyInfo.getString("researcher_contact"));
+                studyData.put(Aware_Provider.Aware_Studies.STUDY_TITLE, studyInfo.getString("study_title"));
+                studyData.put(Aware_Provider.Aware_Studies.STUDY_DESCRIPTION, studyInfo.getString("study_description"));
+                studyData.put(Aware_Provider.Aware_Studies.STUDY_COMPLIANCE, "updated study");
+                studyData.put(Aware_Provider.Aware_Studies.STUDY_JOINED, System.currentTimeMillis());
+                studyData.put(Aware_Provider.Aware_Studies.STUDY_EXIT, 0);
+                context.getContentResolver().insert(Aware_Provider.Aware_Studies.CONTENT_URI, studyData);
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -342,8 +377,6 @@ public class StudyUtils extends IntentService {
         if (schedulers.length() > 0)
             Scheduler.setSchedules(context, schedulers);
 
-        // TODO: Set scheduler for checking/updating study config
-
         for (String package_name : active_plugins) {
             PackageInfo installed = PluginsManager.isInstalled(context, package_name);
             if (installed != null) {
@@ -424,7 +457,7 @@ public class StudyUtils extends IntentService {
      *
      * @param context
      */
-    public static void syncStudyConfig(Context context) {
+    public static void syncStudyConfig(Context context, Boolean toast) {
         if (!Aware.isStudy(context)) return;
 
         String studyUrl = Aware.getSetting(context, Aware_Preferences.WEBSERVICE_SERVER);
@@ -433,34 +466,59 @@ public class StudyUtils extends IntentService {
 
         if (study != null && study.moveToFirst()) {
             try {
-//                JSONObject localConfig = new JSONArray(study.getString(
-//                        study.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)))
-//                        .getJSONObject(0);
                 JSONObject localConfig = new JSONObject(study.getString(
                         study.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)));
                 JSONObject newConfig = getStudyConfig(studyUrl);
                 if (!validateStudyConfig(context, newConfig)) {
-                    Log.e(Aware.TAG, "Failed to sync study config, something is wrong with the config.");
+                    String msg = "Failed to sync study, something is wrong with the config.";
+                    Log.e(Aware.TAG, msg);
+                    if (toast) {
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
                     return;
                 }
                 if (jsonEquals(localConfig, newConfig, false)) {
-                    if (Aware.DEBUG) Aware.debug(context, "No change to study config detected.");
+                    String msg = "There are no study updates.";
+                    if (Aware.DEBUG) Aware.debug(context, msg);
+                    if (toast) {
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
                     return;
                 }
-                applySettings(context, studyUrl, new JSONArray(newConfig));
+                applySettings(context, studyUrl, new JSONArray().put(newConfig), true);
                 if (Aware.DEBUG) Aware.debug(context, "Updated study config: " + newConfig);
+                if (toast) {
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(context, "Study was updated.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
 
-                // TODO RIO: Update last sync date + show notification of study config update
+                // TODO RIO: Update last sync date
 
                 // Notify the user that study config has been updated
-                Intent accessibilitySettings = new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS);
-                accessibilitySettings.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                PendingIntent clickIntent = PendingIntent.getActivity(context, 0, accessibilitySettings, PendingIntent.FLAG_UPDATE_CURRENT);
+                Intent intent = new Intent()
+                        .setComponent(new ComponentName("com.aware.phone", "com.aware.phone.ui.Aware_Light_Client"))
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                PendingIntent clickIntent = PendingIntent.getActivity(context, 0, intent, 0);
 
                 NotificationCompat.Builder builder = new NotificationCompat.Builder(context, Aware.AWARE_NOTIFICATION_CHANNEL_GENERAL)
                         .setChannelId(Aware.AWARE_NOTIFICATION_CHANNEL_GENERAL)
                         .setContentIntent(clickIntent)
                         .setSmallIcon(R.drawable.ic_stat_aware_accessibility)
+                        .setAutoCancel(true)
                         .setContentTitle(context.getResources().getString(R.string.aware_notif_study_sync_title))
                         .setContentText(context.getResources().getString(R.string.aware_notif_study_sync));
                 builder = Aware.setNotificationProperties(builder, Aware.AWARE_NOTIFICATION_IMPORTANCE_GENERAL);
@@ -535,7 +593,7 @@ public class StudyUtils extends IntentService {
         try {
             JSONAssert.assertEquals(obj1, obj2, strict);
             return true;
-        } catch (JSONException e) {
+        } catch (JSONException | AssertionError e) {
             return false;
         }
     }

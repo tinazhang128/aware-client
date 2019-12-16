@@ -31,6 +31,8 @@
     <string name="aware_esm_other_follow">Can you be more specific, please?</string>
     <string name="plugins_required">Plugins needed</string>
     <string name="sensors_required">Sensors needed</string>
+    <string name="sync_study_config">Check for study updates</string>
+    <string name="sync_study_data">Sync data</string>
     <string name="join_study">Join a study</string>
     <string name="quit_study">Quit study</string>
     <string name="sign_up">Sign Up!</string>

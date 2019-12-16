@@ -151,7 +151,8 @@ public class Aware extends Service {
     /**
      * Used to sync study config
      */
-    private static final String ACTION_AWARE_SYNC_CONFIG = "ACTION_AWARE_SYNC_CONFIG";
+    public static final String ACTION_AWARE_SYNC_CONFIG = "ACTION_AWARE_SYNC_CONFIG";
+    public static final String SYNC_CONFIG_EXTRA_TOAST = "SYNC_CONFIG_EXTRA_TOAST";
 
     /**
      * Notification ID for AWARE service as foreground (to handle Doze, Android O battery optimizations)
@@ -1894,6 +1895,7 @@ public class Aware extends Service {
         context.getContentResolver().delete(Aware_Settings.CONTENT_URI, null, null);
 
         //Remove all schedulers
+        context.getContentResolver().delete(Scheduler_Provider.Scheduler_Data.CONTENT_URI, null, null);
 
         //Read default client settings
         SharedPreferences prefs = context.getApplicationContext().getSharedPreferences(context.getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
@@ -2209,12 +2211,13 @@ public class Aware extends Service {
                 ContentResolver.requestSync(Aware.getAWAREAccount(context), Aware_Provider.getAuthority(context), sync);
             }
             if (intent.getAction().equals(Aware.ACTION_AWARE_SYNC_CONFIG) && isStudy(context)) {
-                new Runnable() {
+                new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        StudyUtils.syncStudyConfig(context);
+                        Boolean showToast = intent.getBooleanExtra(Aware.SYNC_CONFIG_EXTRA_TOAST, false);
+                        StudyUtils.syncStudyConfig(context, showToast);
                     }
-                };
+                }).start();
             }
         }
     }

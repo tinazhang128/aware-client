@@ -1,17 +1,14 @@
-
 package com.aware.utils;
 
 import android.Manifest;
 import android.app.Service;
 import android.content.*;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import androidx.core.content.PermissionChecker;
 import com.aware.Aware;
-import com.aware.Aware_Preferences;
 import com.aware.ui.PermissionsHandler;
 
 import java.util.ArrayList;

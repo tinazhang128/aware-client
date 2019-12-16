@@ -67,8 +67,8 @@ public abstract class Aware_Activity extends AppCompatPreferenceActivity {
                 item.setVisible(false);
             if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_study)) && Aware.is_watch(this))
                 item.setVisible(false);
-            if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_sync)) && !Aware.isStudy(this))
-                item.setVisible(false);
+//            if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_sync)) && !Aware.isStudy(this))
+//                item.setVisible(false);
             if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_study)) && !Aware.isStudy(this))
                 item.setVisible(false);
         }
@@ -102,11 +102,11 @@ public abstract class Aware_Activity extends AppCompatPreferenceActivity {
             Intent about_us = new Intent(Aware_Activity.this, About.class);
             startActivity(about_us);
         }
-        if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_sync))) {
-            Toast.makeText(getApplicationContext(), "Syncing data...", Toast.LENGTH_SHORT).show();
-            Intent sync = new Intent(Aware.ACTION_AWARE_SYNC_DATA);
-            sendBroadcast(sync);
-        }
+//        if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_sync))) {
+//            Toast.makeText(getApplicationContext(), "Syncing data...", Toast.LENGTH_SHORT).show();
+//            Intent sync = new Intent(Aware.ACTION_AWARE_SYNC_DATA);
+//            sendBroadcast(sync);
+//        }
         if (item.getTitle().toString().equalsIgnoreCase(getResources().getString(R.string.aware_join_study_link))) {
             new JoinStudyDialog(Aware_Activity.this).showDialog();
         }
