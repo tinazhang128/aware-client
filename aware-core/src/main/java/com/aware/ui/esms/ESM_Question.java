@@ -86,7 +86,7 @@ public class ESM_Question extends DialogFragment {
     }
 
     /**
-     * Set ESM title, limited to about 50 characters due to phone's screen size when in portrait.
+     * Set ESM title
      *
      * @param title
      * @return

@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -66,9 +67,11 @@ public class ESM_Date extends ESM_Question {
         try {
             TextView esm_title = (TextView) ui.findViewById(R.id.esm_title);
             esm_title.setText(getTitle());
+            esm_title.setMovementMethod(ScrollingMovementMethod.getInstance());
 
             TextView esm_instructions = (TextView) ui.findViewById(R.id.esm_instructions);
             esm_instructions.setText(getInstructions());
+            esm_instructions.setMovementMethod(ScrollingMovementMethod.getInstance());
 
             final CalendarView calendarPicker = ui.findViewById(R.id.esm_calendar);
             final DatePicker datePicker = ui.findViewById(R.id.esm_datePicker);
