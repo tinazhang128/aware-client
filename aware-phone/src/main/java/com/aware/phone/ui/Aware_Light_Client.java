@@ -104,7 +104,7 @@ public class Aware_Light_Client extends Aware_Activity {
         REQUIRED_PERMISSIONS.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_WIFI_STATE);
 
-        REQUIRED_PERMISSIONS.add(Manifest.permission.CAMERA);
+//        REQUIRED_PERMISSIONS.add(Manifest.permission.CAMERA);
         REQUIRED_PERMISSIONS.add(Manifest.permission.BLUETOOTH);
         REQUIRED_PERMISSIONS.add(Manifest.permission.BLUETOOTH_ADMIN);
         REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_COARSE_LOCATION);
