@@ -656,6 +656,29 @@ public class Aware extends Service {
         return c.getContentResolver().query(Aware_Provider.Aware_Studies.CONTENT_URI, null, Aware_Provider.Aware_Studies.STUDY_URL + " LIKE '" + study_url + "%' AND " + Aware_Provider.Aware_Studies.STUDY_EXIT + "=0", null, Aware_Provider.Aware_Studies.STUDY_TIMESTAMP + " DESC LIMIT 1");
     }
 
+    /**
+     * Gets the study config object for a given study URL
+     *
+     * @param c
+     * @param study_url
+     * @return JSONObject representing the study config
+     */
+    public static JSONObject getStudyConfig(Context c, String study_url) {
+        Cursor study = getStudy(c, study_url);
+        JSONObject studyConfig = new JSONObject();
+
+        if (study != null && study.moveToFirst()) {
+            try {
+                studyConfig = new JSONObject(study.getString(
+                        study.getColumnIndex(Aware_Provider.Aware_Studies.STUDY_CONFIG)));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return studyConfig;
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);

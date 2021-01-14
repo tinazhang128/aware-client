@@ -38,6 +38,10 @@ import com.aware.Aware_Preferences;
 import com.aware.phone.R;
 import com.aware.ui.PermissionsHandler;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -258,26 +262,48 @@ public class Aware_Light_Client extends Aware_Activity {
             if (PreferenceScreen.class.isInstance(getPreferenceParent(pref))) {
                 PreferenceScreen parent = (PreferenceScreen) getPreferenceParent(pref);
 
-                Boolean prefEnabled = Boolean.valueOf(Aware.getSetting(Aware_Light_Client.this, Aware_Preferences.ENABLE_CONFIG_UPDATE));
+                boolean prefEnabled = Boolean.valueOf(Aware.getSetting(Aware_Light_Client.this, Aware_Preferences.ENABLE_CONFIG_UPDATE));
                 parent.setEnabled(prefEnabled);  // enabled/disabled based on config
 
                 ListAdapter children = parent.getRootAdapter();
-                boolean is_active = false;
+                boolean isActive = false;
+                ArrayList sensorStatuses = new ArrayList<String>();
                 for (int i = 0; i < children.getCount(); i++) {
                     Object obj = children.getItem(i);
                     if (CheckBoxPreference.class.isInstance(obj)) {
                         CheckBoxPreference child = (CheckBoxPreference) obj;
                         if (child.getKey().contains("status_")) {
+                            sensorStatuses.add(child.getKey());
                             if (child.isChecked()) {
-                                is_active = true;
+                                isActive = true;
                                 break;
                             }
                         }
                     }
                 }
 
-                // Only show sensor if it is active
-                if (is_active) {
+                // Check if any of the status settings of a sensor (parent pref) is active in the study config
+                JSONObject studyConfig = Aware.getStudyConfig(getApplicationContext(), Aware.getSetting(getApplicationContext(), Aware_Preferences.WEBSERVICE_SERVER));
+                boolean isActiveInConfig = false;
+                try {
+                    JSONArray sensorsList = studyConfig.getJSONArray("sensors");
+                    for (int i = 0; i < sensorsList.length(); i++) {
+                        JSONObject sensorInfo = sensorsList.getJSONObject(i);
+                        String sensorSetting = sensorInfo.getString("setting");
+
+                        if (sensorStatuses.contains(sensorSetting)) {
+                            sensorStatuses.remove(sensorSetting);
+                            isActiveInConfig = sensorInfo.getBoolean("value");
+                        }
+
+                        if (isActiveInConfig || sensorStatuses.size() == 0) break;
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                // Only show sensor if it is active in the study config
+                if (isActiveInConfig) {
                     if (pref != null) Log.i(TAG, "Pref with key: " + pref.getKey() + " is active!");
                     try {
                         Class res = R.drawable.class;
@@ -285,11 +311,13 @@ public class Aware_Light_Client extends Aware_Activity {
                         int icon_id = field.getInt(null);
                         Drawable category_icon = ContextCompat.getDrawable(getApplicationContext(), icon_id);
                         if (category_icon != null) {
-                            category_icon.setColorFilter(new PorterDuffColorFilter(ContextCompat.getColor(getApplicationContext(), R.color.accent), PorterDuff.Mode.SRC_IN));
+                            int colorId = isActive ? R.color.accent : R.color.lightGray;
+                            category_icon.setColorFilter(new PorterDuffColorFilter(ContextCompat.getColor(getApplicationContext(), colorId), PorterDuff.Mode.SRC_IN));
                             parent.setIcon(category_icon);
                             onContentChanged();
                         }
                     } catch (NoSuchFieldException | IllegalAccessException e) {
+                        e.printStackTrace();
                     }
                 } else {
                     PreferenceCategory rootSensorPref = (PreferenceCategory) getPreferenceParent(parent);
