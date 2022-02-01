@@ -4,7 +4,13 @@ import android.app.Service;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.IBinder;
+import android.util.Log;
+
 import androidx.annotation.Nullable;
+
+import com.aware.Aware;
+import com.aware.providers.Applications_Provider;
+import com.aware.providers.Aware_Provider;
 import com.aware.providers.Battery_Provider;
 
 /**
@@ -25,7 +31,9 @@ public class Battery_Sync extends Service {
                         Battery_Provider.DATABASE_TABLES,
                         Battery_Provider.TABLES_FIELDS,
                         new Uri[]{
-                                Battery_Provider.Battery_Data.CONTENT_URI, Battery_Provider.Battery_Discharges.CONTENT_URI, Battery_Provider.Battery_Charges.CONTENT_URI
+                                Battery_Provider.Battery_Data.CONTENT_URI,
+                                Battery_Provider.Battery_Discharges.CONTENT_URI,
+                                Battery_Provider.Battery_Charges.CONTENT_URI
                         });
             }
         }

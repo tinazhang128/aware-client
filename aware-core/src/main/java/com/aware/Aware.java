@@ -1893,6 +1893,23 @@ public class Aware extends Service {
         }
     }
 
+    // Automatic restart
+    public static final StartReceiver start_BR = new StartReceiver();
+    public static class StartReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            if ("android.intent.action.BOOT_COMPLETED".equals(intent.getAction())) {
+
+                Intent intent_= new Intent(context, Aware.class);
+                intent_.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(intent_);
+                //context.startService(intent);
+            }
+        }
+    }
+
+
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -1905,6 +1922,7 @@ public class Aware extends Service {
             unregisterReceiver(awareBoot);
             unregisterReceiver(foregroundMgr);
             unregisterReceiver(schedulerTicker);
+            unregisterComponentCallbacks((ComponentCallbacks) start_BR);
         } catch (IllegalArgumentException e) {
             //There is no API to check if a broadcast receiver already is registered. Since Aware.java is shared across plugins, the receiver is only registered on the client, not the plugins.
         }
@@ -2220,6 +2238,10 @@ public class Aware extends Service {
     public static class Aware_Broadcaster extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+//            String authority = Battery_Provider.getAuthority(context.getApplicationContext());
+//            Boolean b = Aware.isSyncEnabled(context, authority);
+
+
 
             if (!(context.getPackageName().equals("com.aware.phone") || context.getApplicationContext().getResources().getBoolean(R.bool.standalone)))
                 return;
@@ -2228,9 +2250,11 @@ public class Aware extends Service {
                 Aware.reset(context);
             }
             if (intent.getAction().equals(Aware.ACTION_AWARE_SYNC_DATA)) {
+
                 Bundle sync = new Bundle();
                 sync.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
                 sync.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+
                 ContentResolver.requestSync(Aware.getAWAREAccount(context), Aware_Provider.getAuthority(context), sync);
             }
             if (intent.getAction().equals(Aware.ACTION_AWARE_SYNC_CONFIG) && isStudy(context)) {
@@ -2598,6 +2622,9 @@ public class Aware extends Service {
         for(PeriodicSync p: periodicSyncs) {
             if(Aware.DEBUG) Log.d(Aware.TAG, "Every: " + p.period/60 + " minutes");
         }
+//        Log.d(Aware.TAG, Boolean.toString(isSynchable));
+//        Log.d(Aware.TAG, Boolean.toString(isAutoSynchable));
+//        Log.d(Aware.TAG, Boolean.toString(isMasterSyncEnabled));
         return isSynchable && isAutoSynchable && isMasterSyncEnabled;
     }
 

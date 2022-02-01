@@ -275,6 +275,7 @@ public class ESM extends Aware_Sensor {
         super.onStartCommand(intent, flags, startId);
 
         if (PERMISSIONS_OK) {
+
             DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
             Aware.setSetting(this, Aware_Preferences.STATUS_ESM, true);
 

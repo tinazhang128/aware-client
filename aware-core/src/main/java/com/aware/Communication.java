@@ -11,6 +11,7 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteException;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -24,6 +25,7 @@ import com.aware.providers.Communication_Provider.Calls_Data;
 import com.aware.providers.Communication_Provider.Messages_Data;
 import com.aware.utils.Aware_Sensor;
 import com.aware.utils.Encrypter;
+import com.github.mikephil.charting.utils.FSize;
 
 /**
  * Capture users' communications (calls and messages) events
@@ -104,7 +106,20 @@ public class Communication extends Aware_Sensor {
         public void onChange(boolean selfChange) {
             super.onChange(selfChange);
 
-            Cursor lastCall = getContentResolver().query(Calls.CONTENT_URI, null, null, null, Calls.DATE + " DESC LIMIT 1");
+            // Updated for Android version 29+
+            Cursor lastCall;
+            try{
+                lastCall = getContentResolver().query(Calls.CONTENT_URI, null, null, null, Calls.DATE + " DESC LIMIT 1");
+            } catch (Exception e) {
+                Uri limitedCallUri;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+                   limitedCallUri = Calls.CONTENT_URI.buildUpon().appendQueryParameter(Calls.LIMIT_PARAM_KEY, String.valueOf(1)).appendQueryParameter(ContentResolver.QUERY_ARG_OFFSET, String.valueOf(0)).appendQueryParameter("limit", "1").build();
+                } else{
+                    limitedCallUri = Calls.CONTENT_URI.buildUpon().appendQueryParameter(Calls.LIMIT_PARAM_KEY, String.valueOf(1)).appendQueryParameter("limit", "1").build();
+                }
+                lastCall = getContentResolver().query(limitedCallUri, null, null, null, Calls.DATE + " DESC");
+            }
+
             if (lastCall != null && lastCall.moveToFirst()) {
 
                 Cursor exists = getContentResolver().query(Calls_Data.CONTENT_URI, null, Calls_Data.TIMESTAMP + "=" + lastCall.getLong(lastCall.getColumnIndex(Calls.DATE)), null, null);
