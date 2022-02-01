@@ -105,8 +105,7 @@ public class Battery_Provider extends ContentProvider {
 
     public static String DATABASE_NAME = "battery.db";
 
-    public static final String[] DATABASE_TABLES = {"battery",
-            "battery_discharges", "battery_charges"};
+    public static final String[] DATABASE_TABLES = {"battery", "battery_discharges", "battery_charges"};
     public static final String[] TABLES_FIELDS = {
             // battery
             Battery_Data._ID + " integer primary key autoincrement,"

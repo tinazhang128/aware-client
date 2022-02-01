@@ -147,6 +147,9 @@ public class AwareSyncAdapter extends AbstractThreadedSyncAdapter {
 //        }
     }
 
+
+
+/// Send data to the database
     private void offloadData(Context context, String database_table, String web_server, String table_fields, Uri CONTENT_URI) {
 
         //Fixed: not part of a study, do nothing

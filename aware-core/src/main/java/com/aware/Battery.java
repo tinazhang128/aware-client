@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.aware.providers.Aware_Provider;
 import com.aware.providers.Battery_Provider;
 import com.aware.providers.Battery_Provider.Battery_Charges;
 import com.aware.providers.Battery_Provider.Battery_Data;
@@ -119,7 +120,6 @@ public class Battery extends Aware_Sensor {
     public class Battery_Broadcaster extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-
             if (intent.getAction().equals(Intent.ACTION_BATTERY_CHANGED)) {
                 Bundle extras = intent.getExtras();
                 if (extras == null) return;
@@ -377,6 +377,9 @@ public class Battery extends Aware_Sensor {
         filter.addAction(Intent.ACTION_REBOOT);
         filter.addAction(Intent.ACTION_POWER_CONNECTED);
         filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+
+        // add sync data
+        filter.addAction(Aware.ACTION_AWARE_SYNC_DATA);
 
         registerReceiver(batteryMonitor, filter);
 
