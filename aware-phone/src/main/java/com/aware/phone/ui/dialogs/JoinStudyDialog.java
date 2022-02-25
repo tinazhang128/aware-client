@@ -108,7 +108,7 @@ public class JoinStudyDialog extends DialogFragment {
             JoinStudyDialog.this.dismiss();
 
             if (studyConfig == null) {
-                Toast.makeText(mActivity, "Invalid study config. Please contact the " +
+                Toast.makeText(mActivity, "Invalid study config or no Internet. Please contact the " +
                                 "administrator of this study or enter a different study URL.",
                         Toast.LENGTH_LONG).show();
             } else {

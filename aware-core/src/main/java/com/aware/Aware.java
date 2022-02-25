@@ -683,6 +683,9 @@ public class Aware extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
 
+        // To track the application starting info
+        Aware.debug(getApplicationContext(),"Aware-starting");
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && PermissionChecker.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PermissionChecker.PERMISSION_GRANTED) {
             return START_STICKY;
         }
@@ -1283,6 +1286,9 @@ public class Aware extends Service {
                     context.getContentResolver().update(Aware_Settings.CONTENT_URI, setting, Aware_Settings.SETTING_ID + "=" + qry.getInt(qry.getColumnIndex(Aware_Settings.SETTING_ID)), null);
                     if (Aware.DEBUG)
                         Log.d(Aware.TAG, "Updated: " + key + "=" + value + " in " + package_name);
+
+                    // To track user turning on/off sensors
+                    Aware.debug(context, "Sensor: " + key + "=" + value);
                 }
             } catch (SQLiteException e) {
                 if (Aware.DEBUG) Log.d(TAG, e.getMessage());
