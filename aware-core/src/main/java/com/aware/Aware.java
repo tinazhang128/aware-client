@@ -1288,7 +1288,14 @@ public class Aware extends Service {
                         Log.d(Aware.TAG, "Updated: " + key + "=" + value + " in " + package_name);
 
                     // To track user turning on/off sensors
-                    Aware.debug(context, "Sensor: " + key + "=" + value);
+                    String sensor_track_mes = "Sensor: " + key + "=" + value;
+                    if (Aware.isStudy(context)) {
+                        ContentValues log = new ContentValues();
+                        log.put(Aware_Provider.Aware_Log.LOG_TIMESTAMP, System.currentTimeMillis());
+                        log.put(Aware_Provider.Aware_Log.LOG_DEVICE_ID, Aware.getSetting(context, Aware_Preferences.DEVICE_ID));
+                        log.put(Aware_Provider.Aware_Log.LOG_MESSAGE, sensor_track_mes);
+                        context.getContentResolver().insert(Aware_Provider.Aware_Log.CONTENT_URI, log);
+                    }
                 }
             } catch (SQLiteException e) {
                 if (Aware.DEBUG) Log.d(TAG, e.getMessage());
